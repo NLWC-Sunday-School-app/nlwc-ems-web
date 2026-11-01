@@ -1,0 +1,13 @@
+/* The few things the shared CSS does not cover. Everything else comes from @nlwc/ui. */
+.skip:focus { position: fixed; left: 8px; top: 8px; z-index: 200; width: auto; height: auto; clip: auto; padding: 8px 12px; background: var(--surface); border-radius: var(--radius-md); }
+.acct { position: relative; }
+.acct > summary { list-style: none; cursor: pointer; }
+.acct > summary::-webkit-details-marker { display: none; }
+.acct-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; z-index: 120; }
+.acct-menu a { display: block; padding: 8px 4px; color: var(--text); text-decoration: none; font-weight: 600; }
+.acct-menu a:hover { color: var(--primary); }
+.stack-6 > * + * { margin-top: var(--space-6); }
+.page-pad { padding-block: var(--space-8); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+@media (max-width: 480px) { .two { grid-template-columns: 1fr; } }
+.link-btn { background: none; border: 0; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font: inherit; }
