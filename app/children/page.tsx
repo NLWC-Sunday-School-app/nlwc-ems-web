@@ -26,7 +26,7 @@ function ChildrenScreen() {
       <div className="row between">
         <div>
           <h1>Children</h1>
-          <p className="muted sm" style={{ marginTop: 4 }}>Children aged 0–12 you are a parent or guardian of. From 13 they have their own profile.</p>
+          <p className="muted sm" style={{ marginTop: 4 }}>Children and teenagers under 18 you are a parent or guardian of. You register them and answer their permissions. Each has their own registration.</p>
         </div>
         {!adding && <button className="btn btn-primary" onClick={() => setAdding(true)}>+ Add a child</button>}
       </div>
@@ -91,7 +91,7 @@ function AddChildForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
       <div className="grid g2">
         <TextField label="First name" required maxLength={100} value={f.given} onChange={(e) => setF({ ...f, given: e.target.value })} />
         <TextField label="Last name" required maxLength={100} value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} />
-        <DateParts label="Date of birth" required hint="Children must be 12 or under. It can't be changed later without a review." error={errors.dob} value={dob} onChange={setDob} />
+        <DateParts label="Date of birth" required hint="They must be under 18. It can't be changed later without a review." error={errors.dob} value={dob} onChange={setDob} />
         <SelectField label="Your relationship" value={f.relationship} onChange={(e) => setF({ ...f, relationship: e.target.value as GuardianRelationship })}>
           {Object.entries(RELATIONSHIP_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </SelectField>
