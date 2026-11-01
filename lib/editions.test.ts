@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { campAges, isOpen, modesOf, pickupText, statusBadge } from "./editions";
+import { campAges, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge } from "./editions";
 import type { PublicEdition } from "./types";
 
 const edition = (over: Partial<PublicEdition> = {}): PublicEdition => ({
@@ -35,5 +35,36 @@ describe("editionCodeOf", () => {
     expect(editionCodeOf("BB26-0412-A7")).toBe("BB26");
     expect(editionCodeOf("B1F3A-0001-K4")).toBe("B1F3A");
     expect(editionCodeOf("SS-26-0412-A7")).toBe("SS-26");
+  });
+});
+
+describe("events page helpers", () => {
+  it("counts whole days to the start and says nothing once it has started", () => {
+    expect(daysUntil("2026-12-21", new Date(2026, 9, 31))).toBe(51);
+    expect(daysUntil("2026-12-21", new Date(2026, 11, 20))).toBe(1);
+    expect(daysUntil("2026-12-21", new Date(2026, 11, 21))).toBeNull();
+    expect(daysUntil("2026-12-21", new Date(2027, 0, 5))).toBeNull();
+  });
+  it("splits the date block into days and month", () => {
+    expect(dateRangeParts(edition())).toEqual({ days: "21–23", monthYear: "Dec 2026" });
+    expect(dateRangeParts(edition({ startsOn: "2026-12-21", endsOn: "2026-12-21" })).days).toBe("21");
+  });
+  it("maps a programme code to its accent", () => {
+    expect(eventKey("BB26")).toBe("bootcamp");
+    expect(eventKey("ss27")).toBe("singlz");
+    expect(eventKey("CP26")).toBe("couples");
+    expect(eventKey("XX26")).toBeUndefined();
+  });
+  it("features the soonest open edition, else the soonest upcoming", () => {
+    const open = edition({ slug: "open", startsOn: "2027-03-01", registrationWindow: "Open" });
+    const early = edition({ slug: "early", startsOn: "2026-12-01", registrationWindow: "NotOpen" });
+    expect(featuredEdition([early, open])?.slug).toBe("open");
+    expect(featuredEdition([early])?.slug).toBe("early");
+    expect(featuredEdition([])).toBeUndefined();
+  });
+  it("only says Free for an explicitly published free price", () => {
+    expect(priceLabel(edition({ price: { state: "Free" } }))).toBe("Free");
+    expect(priceLabel(edition({ price: { state: "Pending" } }))).toBe("Price to be confirmed");
+    expect(priceLabel(edition({ price: { state: "Amount" } }))).toBe("Paid event");
   });
 });

@@ -54,12 +54,8 @@ export function Header() {
         </button>
         <nav aria-label="Main" id="mainNav" className={open ? "open" : undefined}>
           <Link href="/events" className={`hide-m ${on("/events") ?? ""}`}>Events</Link>
-          {status === "authenticated" && (
-            <>
-              <Link href="/profile" className={`hide-m ${on("/profile") ?? ""}`}>Profile</Link>
-              <Link href="/children" className={`hide-m ${on("/children") ?? ""}`}>Children</Link>
-            </>
-          )}
+          <Link href="/profile" className={`hide-m ${on("/profile") ?? ""}`}>Profile</Link>
+          <Link href="/payments" className={`hide-m ${on("/payments") ?? ""}`}>Payments</Link>
           <ThemeToggle />
           {status === "authenticated" ? (
             <details className="acct">

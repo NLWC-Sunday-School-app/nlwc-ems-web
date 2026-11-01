@@ -1,4 +1,6 @@
 /* The few things the shared CSS does not cover. Everything else comes from @nlwc/ui. */
+/* @nlwc/ui reserves 33px under the header for the prototype's reviewer bar. This app has none. Drop once @nlwc/ui carries --bar-h. */
+.site-head { top: 0; }
 .skip:focus { position: fixed; left: 8px; top: 8px; z-index: 200; width: auto; height: auto; clip: auto; padding: 8px 12px; background: var(--surface); border-radius: var(--radius-md); }
 .acct { position: relative; }
 .acct > summary { list-style: none; cursor: pointer; }
