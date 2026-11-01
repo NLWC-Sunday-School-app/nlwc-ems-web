@@ -11,3 +11,7 @@
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 @media (max-width: 480px) { .two { grid-template-columns: 1fr; } }
 .link-btn { background: none; border: 0; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font: inherit; }
+.hc-tab[aria-pressed="true"] { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); background: var(--primary-subtle); }
+.perm-card.done { border-left-color: var(--ok-solid); }
+.consent-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: space-between; padding-block: var(--space-2); }
+.consent-row + .consent-row { border-top: 1px solid var(--border); }

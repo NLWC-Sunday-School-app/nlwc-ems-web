@@ -70,6 +70,8 @@ export interface AddCollector { fullName: string; relationship: string; phone: s
 
 // ---- editions (public) ----
 export interface PublicEdition {
+  /** Needed to start a registration. The API does not return it yet (see README, "API gaps"). */
+  id?: string;
   slug: string;
   code: string;
   name: string;

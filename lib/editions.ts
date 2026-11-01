@@ -39,3 +39,10 @@ export function statusBadge(e: PublicEdition): { className: string; label: strin
   if (e.registrationWindow === "Closed") return { className: "b-neutral", label: "Registration closed" };
   return { className: "b-warn", label: "⏱ Coming soon" };
 }
+
+/** The edition code at the start of a reference such as <c>BB26-0412-A7</c>. A fallback for matching a registration to an
+ * edition while the public edition API does not return an id. */
+export function editionCodeOf(reference: string): string {
+  const parts = reference.split("-");
+  return parts.length > 2 ? parts.slice(0, -2).join("-") : reference;
+}

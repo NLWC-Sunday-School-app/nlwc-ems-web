@@ -27,3 +27,13 @@ describe("edition helpers", () => {
     expect(statusBadge(edition({ registrationWindow: "Closed" })).label).toMatch(/closed/i);
   });
 });
+
+import { editionCodeOf } from "./editions";
+
+describe("editionCodeOf", () => {
+  it("takes the edition code off the front of a reference", () => {
+    expect(editionCodeOf("BB26-0412-A7")).toBe("BB26");
+    expect(editionCodeOf("B1F3A-0001-K4")).toBe("B1F3A");
+    expect(editionCodeOf("SS-26-0412-A7")).toBe("SS-26");
+  });
+});
