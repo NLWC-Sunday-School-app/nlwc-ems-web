@@ -27,7 +27,7 @@ export function ReviewStep({
 }) {
   const pickup = pickupText(edition);
   const anyDay = entries.some((e) => e.registration?.participationMode === "Day" && e.person.isChild);
-  const holding = entries.filter((e) => reviews[e.registration!.id]?.holdsPass);
+  const holding = entries.filter((e) => reviews[e.registration!.id]?.holdsPass && !results[e.registration!.id]?.ok);
 
   if (loading) return <Loading label="Checking what's left…" />;
 

@@ -135,7 +135,7 @@ function ProfileScreen() {
       </form>
 
       <div className="card">
-        <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" onSaved={() => void reload()} key={profile.emergencyContact?.phone ?? "none"} />
+        <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" />
       </div>
     </div>
   );

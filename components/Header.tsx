@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 
@@ -32,7 +32,6 @@ function ThemeToggle() {
 export function Header() {
   const { status, logout } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [pathname]);
@@ -73,10 +72,7 @@ export function Header() {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  onClick={async () => {
-                    await logout();
-                    router.push("/events");
-                  }}
+                  onClick={() => void logout()}
                 >
                   Sign out
                 </button>

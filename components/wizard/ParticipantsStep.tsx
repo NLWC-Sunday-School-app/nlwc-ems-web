@@ -73,7 +73,7 @@ export function ParticipantsStep({
                       {modes.map((m) => (
                         <label className="mp-opt" key={m.mode}>
                           <input type="radio" name={group} value={m.mode} checked={e.mode === m.mode} onChange={() => onChange(p.personId, { mode: m.mode as ParticipationMode, error: undefined })} />
-                          <div><b>{m.label}</b><span>{m.mode === "Camp" && camp ? `Ages ${camp} only` : m.mode === "Online" ? "Joins the broadcast" : "In person, daily"}</span></div>
+                          <div><b>{MODE_LABEL[m.mode]}</b><span>{m.mode === "Camp" && camp ? `Ages ${camp} only` : m.mode === "Online" ? "Joins the broadcast" : "In person, daily"}</span></div>
                         </label>
                       ))}
                     </div>
@@ -95,7 +95,7 @@ export function ParticipantsStep({
         );
       })}
       {entries.length === 0 && <div className="empty"><p className="muted sm">No one to register yet. Add a child on the Children page, or complete your profile.</p></div>}
-      <div className="note">Age is worked out by the system at the event's start from the date of birth. Eligibility is checked when you continue.</div>
+      <p className="xs muted">Age is worked out by the system at the event's start from the date of birth. Eligibility is checked when you continue.</p>
     </div>
   );
 }

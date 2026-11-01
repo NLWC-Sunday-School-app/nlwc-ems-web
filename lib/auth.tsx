@@ -50,8 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post("/auth/logout");
     } finally {
-      setMe(null);
-      setStatus("anonymous");
+      // A full navigation, not a client one: it drops everything held in memory (health answers included) and cannot
+      // race with a guarded page redirecting to /login.
+      window.location.assign("/events");
     }
   }, []);
 

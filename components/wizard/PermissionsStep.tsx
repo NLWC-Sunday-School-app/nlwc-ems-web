@@ -90,19 +90,19 @@ export function PermissionsStep({
               const name = `${e.person.given} ${e.person.family}`;
               const group = `${kind}-${id}`;
               return (
-                <div className="consent-row" key={id}>
+                <div className="ph-row" key={id}>
                   <div className="row" style={{ flex: 1, minWidth: 150 }}>
                     <Avatar>{initials(e.person.given)}</Avatar>
                     <div><b>{name}</b>{e.person.age != null && <div className="xs muted">{e.person.age} years old</div>}</div>
                   </div>
                   <div className="ph-choice" role="radiogroup" aria-label={`${CONSENT_TITLE[kind]} for ${name}`}>
-                    <label><input type="radio" name={group} checked={value === true} onChange={() => answer(id, kind, true)} /><span>I consent</span></label>
-                    <label><input type="radio" name={group} checked={value === false} onChange={() => answer(id, kind, false)} /><span>I do not consent</span></label>
+                    <label><input type="radio" name={group} value="yes" checked={value === true} onChange={() => answer(id, kind, true)} /><span>I consent</span></label>
+                    <label><input type="radio" name={group} value="no" checked={value === false} onChange={() => answer(id, kind, false)} /><span>I do not consent</span></label>
                   </div>
                   <span className="ph-st">
-                    {value === undefined && <span className="badge b-warn">⏱ Not answered</span>}
-                    {value === true && <span className="badge b-ok">✓ Consent given</span>}
-                    {value === false && <span className={`badge ${kind === "Media" ? "b-neutral" : "b-bad"}`}>{kind === "Media" ? "Declined" : "Declined · can't register"}</span>}
+                    <span className="badge b-warn st-none">⏱ Not answered</span>
+                    <span className="badge b-ok st-yes">✓ Consent given</span>
+                    <span className={`badge ${kind === "Media" ? "b-neutral" : "b-bad"} st-no`}>{kind === "Media" ? "Declined" : "Declined · can't register"}</span>
                   </span>
                 </div>
               );

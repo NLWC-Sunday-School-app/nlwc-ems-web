@@ -99,7 +99,7 @@ export function HealthStep({
         <span className="hc-count xs muted">{doneCount} of {physical.length} done</span>
       </div>
 
-      <section className="card hc-panel stack-4" aria-label={`Health and care for ${selected.person.given}`}>
+      <section className="card stack-4" aria-label={`Health and care for ${selected.person.given}`}>
         <div><h3>{selected.person.given}</h3>{selected.person.age != null && <div className="xs muted">{selected.person.age} years old</div>}</div>
         {!a.loaded ? <Loading /> : (
           <>
