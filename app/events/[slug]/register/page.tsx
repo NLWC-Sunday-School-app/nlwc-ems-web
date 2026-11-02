@@ -10,7 +10,7 @@ import { PermissionsStep, type ConsentAnswers } from "@/components/wizard/Permis
 import { ParticipantsStep } from "@/components/wizard/ParticipantsStep";
 import { PickupStep } from "@/components/wizard/PickupStep";
 import { ReviewStep, type SubmitResult } from "@/components/wizard/ReviewStep";
-import { STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
+import { requiredConsentsGiven, STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
 import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
@@ -62,9 +62,10 @@ function Wizard() {
         ]);
         if (!alive) return;
 
+        const start = new Date(`${ed.startsOn}T00:00:00`);
         const people: Person[] = [
-          { personId: profile.personId, given: profile.givenName, family: profile.familyName, age: profile.dateOfBirth ? ageOn(profile.dateOfBirth) : null, isSelf: true, isChild: false, hasDob: !!profile.dateOfBirth },
-          ...kids.map((k) => ({ personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, isSelf: false, isChild: true, hasDob: !!k.dateOfBirth })),
+          { personId: profile.personId, given: profile.givenName, family: profile.familyName, age: profile.dateOfBirth ? ageOn(profile.dateOfBirth) : null, ageAtEvent: profile.dateOfBirth ? ageOn(profile.dateOfBirth, start) : null, isSelf: true, isChild: false, hasDob: !!profile.dateOfBirth },
+          ...kids.map((k) => ({ personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, hasDob: !!k.dateOfBirth })),
         ];
         // Registrations for this edition: by id once the API returns it, else by the edition code at the start of the reference.
         const mine = regs.filter((r) => !DEAD.has(r.state) && (ed.id ? r.editionId === ed.id : editionCodeOf(r.reference) === ed.code));
@@ -185,6 +186,8 @@ function Wizard() {
     return Object.keys(errs).length === 0;
   }
 
+  const consentsReady = requiredConsentsGiven(live, consents);
+
   async function next() {
     setError(null);
     setBusy(true);
@@ -302,6 +305,7 @@ function Wizard() {
         {step === 2 && <PickupStep edition={edition} entries={live} />}
         {step === 3 && (
           <PermissionsStep
+            edition={edition}
             entries={live}
             answers={consents}
             setAnswers={(f) => setConsents(f)}
@@ -313,12 +317,16 @@ function Wizard() {
 
         <FormError message={error} />
 
+        {step === 3 && !consentsReady && (
+          <p className="xs muted" id="consent-hint" role="status">Give the parent consent and confirm the pick-up notice to continue. Photos and videos are optional.</p>
+        )}
+
         <div className="wiz-actions">
           {step > 0 ? <button type="button" className="btn btn-secondary" onClick={() => goTo((step - 1) as StepIndex)} disabled={busy}>Back</button> : <span />}
           <div className="row">
             {live.length > 0 && <button type="button" className="btn btn-ghost" onClick={saveAndExit} disabled={busy}>Save draft and exit</button>}
             {step < 4 ? (
-              <button type="button" className="btn btn-primary" onClick={next} disabled={busy}>{busy ? "Saving…" : "Continue"}</button>
+              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 3 && !consentsReady)} aria-describedby={step === 3 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={submit} disabled={busy || reviewing || !live.some((e) => reviews[e.registration!.id]?.canSubmit && !results[e.registration!.id]?.ok)}>
                 {busy ? "Submitting…" : "Submit registration"}

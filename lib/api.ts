@@ -14,6 +14,9 @@ export class ApiError extends Error {
 
 const PREFIX = "/api/v1";
 
+/** Fired on <c>window</c> when the API says the session is no longer valid. */
+export const SESSION_ENDED = "nlwc:session-ended";
+
 /** Browser: same origin (the Next.js rewrite proxies to the API). Server components: straight to the API. */
 function base(): string {
   return typeof window === "undefined" ? (process.env.API_URL ?? "http://localhost:4000") : "";
@@ -55,6 +58,12 @@ async function request<T>(method: Method, path: string, body?: unknown, init?: R
     envelope = text ? (JSON.parse(text) as Envelope<T>) : null;
   } catch {
     // A 5xx from the proxy or a crash is not our envelope; never show raw text to a family.
+  }
+
+  // A 401 on anything but sign-in itself means the session ended (idle timeout, signed out elsewhere). Tell the app, so it
+  // stops showing a signed-in page and sends the person to sign in rather than leaving them with a dead form.
+  if (response.status === 401 && typeof window !== "undefined" && path !== "/auth/login" && path !== "/auth/me") {
+    window.dispatchEvent(new Event(SESSION_ENDED));
   }
 
   if (!response.ok || (envelope && envelope.success === false)) {

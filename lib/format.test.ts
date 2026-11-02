@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOn, formatDate, formatDateRange, formatShortDate, formatTime, priceLine, safeNext, toIsoDate, REGISTRATION_BADGE } from "./format";
+import { ageOn, formatLongDay, formatOrdinalRange, formatDate, formatDateRange, formatShortDate, formatTime, priceLine, safeNext, toIsoDate, REGISTRATION_BADGE } from "./format";
 
 describe("dates", () => {
   it("formats API dates without a timezone shift", () => {
@@ -53,3 +53,16 @@ describe("safeNext", () => {
     expect(safeNext(null)).toBe("/dashboard");
   });
 });
+
+describe("long dates for the consent wording", () => {
+  it("spells out the day for the last-day notice", () => {
+    expect(formatLongDay("2026-12-23")).toBe("Wednesday 23 December");
+  });
+  it("writes ordinal ranges, including 11th–13th, across months and for one day", () => {
+    expect(formatOrdinalRange("2026-12-21", "2026-12-23")).toBe("21st to 23rd December 2026");
+    expect(formatOrdinalRange("2026-08-11", "2026-08-13")).toBe("11th to 13th August 2026");
+    expect(formatOrdinalRange("2026-08-30", "2026-09-02")).toBe("30th August to 2nd September 2026");
+    expect(formatOrdinalRange("2026-12-22", "2026-12-22")).toBe("22nd December 2026");
+  });
+});
+

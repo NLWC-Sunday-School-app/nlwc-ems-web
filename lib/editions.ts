@@ -37,7 +37,7 @@ export const getEdition = (slug: string) => api.get<PublicEdition>(`/public/edit
 /** How the edition can be taken part in, from what the API says it offers. Online is always available. */
 export function modesOf(e: PublicEdition): { mode: "Online" | "Day" | "Camp"; label: string; blurb: string; tag: string }[] {
   const out: { mode: "Online" | "Day" | "Camp"; label: string; blurb: string; tag: string }[] = [
-    { mode: "Online", label: "Online", blurb: "Join the broadcast from home.", tag: "Everyone" },
+    { mode: "Online", label: "Online", blurb: "Stream online.", tag: "Everyone" },
     { mode: "Day", label: "Walk-in", blurb: "Attend in person and check in and out each day.", tag: "In person" },
   ];
   if (e.camp && (e.camp.minAge != null || e.camp.maxAge != null)) {
@@ -53,6 +53,13 @@ export function modesOf(e: PublicEdition): { mode: "Online" | "Day" | "Camp"; la
 
 export const campAges = (e: PublicEdition): string | null =>
   e.camp && (e.camp.minAge != null || e.camp.maxAge != null) ? `${e.camp.minAge ?? 0}${e.camp.maxAge != null ? `–${e.camp.maxAge}` : "+"}` : null;
+
+/** Whether someone of this age (on the day the event starts) may ask for camp. Unknown age passes: the API decides. */
+export function campAllows(e: PublicEdition, age: number | null): boolean {
+  if (!e.camp || (e.camp.minAge == null && e.camp.maxAge == null)) return false;
+  if (age == null) return true;
+  return age >= (e.camp.minAge ?? 0) && (e.camp.maxAge == null || age <= e.camp.maxAge);
+}
 
 export const pickupText = (e: PublicEdition): string | null =>
   e.pickupWindow ? `${formatTime(e.pickupWindow.start)} – ${formatTime(e.pickupWindow.end)} daily` : null;

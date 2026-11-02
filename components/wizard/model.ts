@@ -7,6 +7,8 @@ export interface Person {
   family: string;
   /** Display age today. The API decides the age that matters, on the edition's reference date. */
   age: number | null;
+  /** Age on the day the edition starts, for the eligibility hints. The API still decides on its own reference date. */
+  ageAtEvent: number | null;
   isSelf: boolean;
   /** Dependants are always children (0–12). Yourself is treated as an adult; the API refuses an under-18 self-registration. */
   isChild: boolean;
@@ -35,6 +37,15 @@ export const active = (entries: Entry[]) => entries.filter((e) => e.selected && 
 /** Which consents to ask for. Presentation only: the API rejects any that don't apply and decides what blocks submit. */
 export const consentKinds = (p: Person): ConsentKind[] =>
   p.isChild ? ["Terms", "GuardianAuthorization", "MedicalEmergency", "Media"] : ["Terms"];
+
+/** What the family has answered: registrationId → kind → yes/no. A missing kind is "not answered". */
+export type ConsentAnswers = Record<string, Partial<Record<ConsentKind, boolean>>>;
+
+/** True once every required consent has been given for everyone being registered. Photos and videos are optional, so a
+ * missing or declined answer there never blocks. The API still has the final say at submit. */
+export function requiredConsentsGiven(entries: Entry[], answers: ConsentAnswers): boolean {
+  return entries.length > 0 && entries.every((e) => consentKinds(e.person).filter((k) => k !== "Media").every((k) => answers[e.registration?.id ?? ""]?.[k] === true));
+}
 
 export const CONSENT_TITLE: Record<ConsentKind, string> = {
   Terms: "Event terms",

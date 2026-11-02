@@ -2,12 +2,40 @@
 /* @nlwc/ui reserves 33px under the header for the prototype's reviewer bar. This app has none. Drop once @nlwc/ui carries --bar-h. */
 .site-head { top: 0; }
 .skip:focus { position: fixed; left: 8px; top: 8px; z-index: 200; width: auto; height: auto; clip: auto; padding: 8px 12px; background: var(--surface); border-radius: var(--radius-md); }
-.acct { position: relative; }
-.acct > summary { list-style: none; cursor: pointer; }
-.acct > summary::-webkit-details-marker { display: none; }
-.acct-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; z-index: 120; }
-.acct-menu a { display: block; padding: 8px 4px; color: var(--text); text-decoration: none; font-weight: 600; }
-.acct-menu a:hover { color: var(--primary); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---- header: nav links as quiet pills, the active one filled ---- */
+.site-head nav { gap: var(--space-1); }
+.site-head nav a:not(.btn) { padding: 8px 14px; border-radius: var(--radius-pill); transition: background .15s, color .15s; }
+.site-head nav a:not(.btn):hover { background: var(--surface-sunken); color: var(--text); }
+.site-head nav a.on { background: var(--primary-subtle); color: var(--primary); font-weight: 600; }
+.site-head .theme-toggle { border-color: transparent; width: 40px; height: 40px; margin: 0 var(--space-1); }
+.site-head .theme-toggle:hover { background: var(--surface-sunken); border-color: transparent; color: var(--text); }
+
+/* ---- header: the account menu ---- */
+.acct { position: relative; margin-left: var(--space-1); }
+.acct-btn { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 4px 12px 4px 4px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); color: var(--text); font: 600 var(--text-sm) var(--font-ui); cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.acct-btn:hover, .acct-btn[aria-expanded="true"] { border-color: var(--border-strong); box-shadow: var(--shadow-1); }
+.acct-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.acct-av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; background: linear-gradient(135deg, var(--ember-500, #E8541A), var(--ember-700, #B3260E)); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.acct-av.lg { width: 44px; height: 44px; font-size: 15px; }
+.acct-chev { color: var(--text-muted); transition: transform .15s; }
+.acct-btn[aria-expanded="true"] .acct-chev { transform: rotate(180deg); }
+.acct-pop { position: absolute; right: 0; top: calc(100% + 10px); width: 288px; z-index: 120; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-3); padding: 6px; transform-origin: top right; animation: acct-in .14s ease-out; }
+@keyframes acct-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .acct-pop { animation: none; } .acct-chev { transition: none; } }
+.acct-head { display: flex; align-items: center; gap: 12px; padding: 12px 10px 14px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.acct-who { display: block; font-size: var(--text-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-mail { font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-list { display: grid; gap: 2px; }
+.acct-foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+.acct-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: var(--radius-md); background: none; color: var(--text); font: 500 var(--text-sm) var(--font-ui); text-decoration: none; text-align: left; cursor: pointer; }
+.acct-item svg { color: var(--text-muted); flex: none; }
+.acct-item:hover, .acct-item:focus-visible { background: var(--surface-sunken); outline: none; }
+.acct-item:hover svg { color: var(--primary); }
+.acct-item.danger { color: var(--bad-solid); }
+.acct-item.danger svg, .acct-item.danger:hover svg { color: var(--bad-solid); }
+@media (max-width: 720px) { .acct-btn { padding-right: 8px; } .acct-chev { display: none; } .acct-pop { position: fixed; left: 12px; right: 12px; width: auto; top: 76px; } }
 .stack-6 > * + * { margin-top: var(--space-6); }
 .container.page-pad { padding-block: var(--space-8); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
@@ -15,3 +43,15 @@
 .link-btn { background: none; border: 0; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font: inherit; }
 .hc-tab[aria-pressed="true"] { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); background: var(--primary-subtle); }
 .perm-card.done { border-left-color: var(--ok-solid); }
+/* The prototype's sticky offsets assume its 33px reviewer bar; this app has none. */
+.local-nav { top: 88px; }
+.card[id^="pf-"] { scroll-margin-top: 100px; }
+/* Inputs and selects share one height, and form rows align to the top instead of stretching. */
+.profile-layout .grid.g2 { align-items: start; }
+.profile-layout .select, .profile-layout .input { height: 44px; box-sizing: border-box; }
+/* The header's nav-link rules reach the menu items too (they live inside the nav); put them back. */
+.site-head nav .acct-pop a.acct-item { border: 0; box-shadow: none; padding: 0 10px; border-radius: var(--radius-md); color: var(--text); font-weight: 500; }
+.site-head nav .acct-pop a.acct-item:hover { background: var(--surface-sunken); color: var(--text); }
+/* The template marks the photos card done with a nested :has(), which browsers ignore. The step sets .done itself. */
+.perm-card.done .perm-ok { display: inline-flex; }
+.perm-card.done .perm-n { background: var(--ok-bg); border-color: var(--ok-solid); color: var(--ok-fg); }

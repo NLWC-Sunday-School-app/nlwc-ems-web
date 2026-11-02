@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AccountMenu } from "@/components/AccountMenu";
 import { useAuth } from "@/lib/auth";
 
 function ThemeToggle() {
@@ -30,7 +31,7 @@ function ThemeToggle() {
 }
 
 export function Header() {
-  const { status, logout } = useAuth();
+  const { status } = useAuth();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -54,26 +55,9 @@ export function Header() {
         </button>
         <nav aria-label="Main" id="mainNav" className={open ? "open" : undefined}>
           <Link href="/events" className={`hide-m ${on("/events") ?? ""}`}>Events</Link>
-          <Link href="/profile" className={`hide-m ${on("/profile") ?? ""}`}>Profile</Link>
-          <Link href="/payments" className={`hide-m ${on("/payments") ?? ""}`}>Payments</Link>
           <ThemeToggle />
           {status === "authenticated" ? (
-            <details className="acct">
-              <summary className="btn btn-secondary btn-sm">Account</summary>
-              <div className="acct-menu card stack-2">
-                <Link href="/dashboard">My events</Link>
-                <Link href="/profile">Profile</Link>
-                <Link href="/children">Children</Link>
-                <Link href="/privacy">Privacy and consents</Link>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => void logout()}
-                >
-                  Sign out
-                </button>
-              </div>
-            </details>
+            <AccountMenu />
           ) : status === "anonymous" ? (
             <Link href={`/login?next=${encodeURIComponent(pathname)}`} className="btn btn-brand btn-sm">Sign in</Link>
           ) : null}

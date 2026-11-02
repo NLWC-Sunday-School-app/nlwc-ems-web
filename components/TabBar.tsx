@@ -13,7 +13,6 @@ export function TabBar() {
     ...(status === "authenticated"
       ? [
           { href: "/dashboard", label: "My events" },
-          { href: "/children", label: "Children" },
           { href: "/profile", label: "Profile" },
         ]
       : [{ href: "/login", label: "Sign in" }]),

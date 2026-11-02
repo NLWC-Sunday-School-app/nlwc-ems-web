@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Dependants } from "@/components/Dependants";
 import { EmergencyContactForm } from "@/components/EmergencyContactForm";
 import { Avatar, DateParts, FormError, FormNotice, Loading, SelectField, TextField } from "@/components/Form";
+import { LocalNav } from "@/components/LocalNav";
+import { PlaceFields } from "@/components/PlaceFields";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api, errorCode, friendlyError } from "@/lib/api";
 import { ageOn, formatShortDate, initials, toIsoDate } from "@/lib/format";
-import type { Gender, Profile } from "@/lib/types";
+import type { Dependant, Gender, Profile } from "@/lib/types";
 import { useLoad } from "@/lib/useAsync";
 
 export default function ProfilePage() {
@@ -25,11 +28,22 @@ function ProfileScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const kids = useLoad(() => api.get<Dependant[]>("/dependant"));
 
+  const fromProfile = (p: Profile) => ({ given: p.givenName, middle: p.middleName ?? "", family: p.familyName, gender: p.gender ?? "", marital: p.maritalStatus ?? "", country: p.country ?? "", city: p.city ?? "" }) as typeof f;
   useEffect(() => {
-    if (!profile) return;
-    setF({ given: profile.givenName, middle: profile.middleName ?? "", family: profile.familyName, gender: profile.gender ?? "", marital: profile.maritalStatus ?? "", country: profile.country ?? "", city: profile.city ?? "" });
+    if (profile) setF(fromProfile(profile));
   }, [profile]);
+
+  const sections = useMemo(
+    () => [
+      { id: "pf-details", label: "My details" },
+      { id: "pf-emergency", label: "Emergency contact" },
+      { id: "pf-kids", label: "Dependants", badge: kids.data?.length ?? null },
+    ],
+    [kids.data?.length],
+  );
 
   if (loading && !profile) return <div className="container page-pad"><Loading /></div>;
   if (!profile) return <div className="container page-pad"><FormError message={error ?? "We couldn't load your profile."} /></div>;
@@ -65,6 +79,7 @@ function ProfileScreen() {
         dateOfBirth: dobLocked ? profile!.dateOfBirth : dateOfBirth,
       });
       setSaved("Your details are saved.");
+      setEditing(false);
       await reload();
     } catch (err) {
       if (errorCode(err) === "invalid_date_of_birth") setDobError(friendlyError(err));
@@ -74,11 +89,22 @@ function ProfileScreen() {
     }
   }
 
+  const cancel = () => {
+    setF(fromProfile(profile!));
+    setDob({ d: "", m: "", y: "" });
+    setDobError(null);
+    setFormError(null);
+    setEditing(false);
+  };
+  const fullName = [profile.givenName, profile.middleName, profile.familyName].filter(Boolean).join(" ");
+  const place = [profile.country, profile.city].filter(Boolean).join(" · ");
+  const none = <span className="muted">Not added</span>;
+
   return (
     <div className="container page-pad stack-6">
       <div>
-        <h1>Profile</h1>
-        <p className="muted sm" style={{ marginTop: 4 }}>Your own details. Your children are on the <a href="/children">Children</a> page.</p>
+        <h1>Profile and family</h1>
+        <p className="muted sm" style={{ marginTop: 4 }}>Your details and your children.</p>
       </div>
 
       {profile.needsDateOfBirth && (
@@ -87,55 +113,93 @@ function ProfileScreen() {
         </div>
       )}
 
-      <form className="card stack-4" onSubmit={save}>
-        <div className="card-h">
-          <div className="row">
-            <Avatar>{initials(profile.givenName, profile.familyName)}</Avatar>
-            <div>
-              <h2>My details</h2>
-              <div className="xs muted">
-                {profile.email} {profile.emailVerified ? <span className="badge b-ok">✓ verified</span> : <span className="badge b-warn">⏱ not confirmed</span>}
-              </div>
-            </div>
-          </div>
-        </div>
-        <FormError message={formError} />
-        <FormNotice message={saved} />
-        <div className="grid g2">
-          <TextField label="First name" required maxLength={100} autoComplete="given-name" value={f.given} onChange={(e) => setF({ ...f, given: e.target.value })} />
-          <TextField label="Other / middle names" maxLength={100} value={f.middle} onChange={(e) => setF({ ...f, middle: e.target.value })} />
-          <TextField label="Last name" required maxLength={100} autoComplete="family-name" value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} />
-          {dobLocked ? (
-            <div className="field">
-              <span className="lbl">Date of birth</span>
-              <div className="row">
-                <b>{formatShortDate(profile.dateOfBirth!)}</b>
-                <span className="xs muted">· age {ageOn(profile.dateOfBirth!)}</span>
-                <span className="badge b-neutral">🔒 locked</span>
-              </div>
-              <span className="hint">Your date of birth can only be set once because age bands and eligibility depend on it. To correct it, contact the team and we'll review it.</span>
-            </div>
-          ) : (
-            <DateParts label="Date of birth" required hint="You can only set this once, so check it carefully." error={dobError} value={dob} onChange={setDob} />
-          )}
-          <SelectField label="Gender" value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value as Gender })}>
-            <option value="">Prefer not to say</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </SelectField>
-          <SelectField label="Marital status" value={f.marital} onChange={(e) => setF({ ...f, marital: e.target.value })}>
-            <option value="">Select</option>
-            <option value="Single">Single</option>
-            <option value="Married">Married</option>
-          </SelectField>
-          <TextField label="Country" maxLength={60} autoComplete="country-name" value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })} />
-          <TextField label="City" maxLength={100} autoComplete="address-level2" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} />
-        </div>
-        <div><button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button></div>
-      </form>
+      <div className="profile-layout">
+        <LocalNav items={sections} />
 
-      <div className="card">
-        <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" />
+        <div className="stack-6" style={{ minWidth: 0 }}>
+          <form className="card" id="pf-details" onSubmit={save}>
+            <div className="card-h">
+              <div className="row">
+                <Avatar>{initials(profile.givenName, profile.familyName)}</Avatar>
+                <div>
+                  <h2>My details</h2>
+                  <div className="xs muted">
+                    {profile.email} {profile.emailVerified ? <span className="badge b-ok">✓ verified</span> : <span className="badge b-warn">⏱ not confirmed</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="row">
+                {editing ? (
+                  <>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={cancel}>Cancel</button>
+                    <button className="btn btn-primary btn-sm" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>
+                  </>
+                ) : (
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setSaved(null); setEditing(true); }}>Edit details</button>
+                )}
+              </div>
+            </div>
+
+            <div className="stack-4">
+              <FormError message={formError} />
+              <FormNotice message={saved} />
+
+              {!editing ? (
+                <div className="detail-cols">
+                  <dl className="kv">
+                    <dt>Full name</dt><dd>{fullName}</dd>
+                    <dt>Date of birth</dt>
+                    <dd>
+                      {profile.dateOfBirth ? <>{formatShortDate(profile.dateOfBirth)} <span className="xs muted">· age {ageOn(profile.dateOfBirth)}</span> <span className="badge b-neutral">🔒 locked</span></> : none}
+                    </dd>
+                    <dt>Gender</dt><dd>{profile.gender ?? none}</dd>
+                    <dt>Marital status</dt><dd>{profile.maritalStatus ?? none}</dd>
+                  </dl>
+                  <dl className="kv">
+                    <dt>Email</dt><dd>{profile.email}</dd>
+                    <dt>Country / city</dt><dd>{place || none}</dd>
+                  </dl>
+                </div>
+              ) : (
+                <div className="grid g2">
+                  <TextField label="First name" required maxLength={100} autoComplete="given-name" value={f.given} onChange={(e) => setF({ ...f, given: e.target.value })} />
+                  <TextField label="Other / middle names" maxLength={100} value={f.middle} onChange={(e) => setF({ ...f, middle: e.target.value })} />
+                  <TextField label="Last name" required maxLength={100} autoComplete="family-name" value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} />
+                  {dobLocked ? (
+                    <div className="field">
+                      <span className="lbl">Date of birth</span>
+                      <div className="row">
+                        <b>{formatShortDate(profile.dateOfBirth!)}</b>
+                        <span className="xs muted">· age {ageOn(profile.dateOfBirth!)}</span>
+                        <span className="badge b-neutral">🔒 locked</span>
+                      </div>
+                      <span className="hint">Your date of birth can only be set once because age bands and eligibility depend on it. To correct it, contact the team and we'll review it.</span>
+                    </div>
+                  ) : (
+                    <DateParts label="Date of birth" required hint="You can only set this once, so check it carefully." error={dobError} value={dob} onChange={setDob} />
+                  )}
+                  <SelectField label="Gender" value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value as Gender })}>
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </SelectField>
+                  <SelectField label="Marital status" value={f.marital} onChange={(e) => setF({ ...f, marital: e.target.value })}>
+                    <option value="">Select</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                  </SelectField>
+                  <PlaceFields country={f.country} city={f.city} onChange={(v) => setF({ ...f, ...v })} />
+                </div>
+              )}
+            </div>
+          </form>
+
+          <div className="card" id="pf-emergency">
+            <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" />
+          </div>
+
+          <Dependants kids={kids.data ?? null} loading={kids.loading} error={kids.error} reload={kids.reload} />
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { campAges, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge } from "./editions";
+import { campAges, campAllows, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge } from "./editions";
 import type { PublicEdition } from "./types";
 
 const edition = (over: Partial<PublicEdition> = {}): PublicEdition => ({
@@ -66,5 +66,27 @@ describe("events page helpers", () => {
     expect(priceLabel(edition({ price: { state: "Free" } }))).toBe("Free");
     expect(priceLabel(edition({ price: { state: "Pending" } }))).toBe("Price to be confirmed");
     expect(priceLabel(edition({ price: { state: "Amount" } }))).toBe("Paid event");
+  });
+});
+
+describe("campAllows", () => {
+  it("lets only the camp ages ask for camp, judged on the age at the event", () => {
+    const e = edition();
+    expect([1, 9].map((a) => campAllows(e, a))).toEqual([false, false]);
+    expect([10, 13, 16].map((a) => campAllows(e, a))).toEqual([true, true, true]);
+    expect([17, 40].map((a) => campAllows(e, a))).toEqual([false, false]);
+  });
+  it("lets an unknown age through (the API decides) and refuses when the event has no camp", () => {
+    expect(campAllows(edition(), null)).toBe(true);
+    expect(campAllows(edition({ camp: null }), 12)).toBe(false);
+  });
+  it("treats an open-ended range as open", () => {
+    expect(campAllows(edition({ camp: { minAge: 10, maxAge: null } }), 30)).toBe(true);
+  });
+});
+
+describe("modesOf", () => {
+  it("describes online as streaming", () => {
+    expect(modesOf(edition()).find((m) => m.mode === "Online")?.blurb).toBe("Stream online.");
   });
 });

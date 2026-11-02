@@ -80,7 +80,7 @@ export default function SignUpPage() {
         </div>
         <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Creating account…" : "Create account"}</button>
       </form>
-      <GoogleButton />
+      <GoogleButton next={next} />
       <p className="center sm">Already have an account? <Link className="bold" href="/login">Log in</Link></p>
     </AuthShell>
   );

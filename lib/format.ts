@@ -2,6 +2,8 @@ import type { ParticipationMode, PriceState, RegistrationState } from "./types";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const LONG_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const LONG_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /** Parses an API date (<c>yyyy-MM-dd</c>) without a timezone shift. */
 function parts(date: string): { y: number; m: number; d: number; weekday: number } {
@@ -109,3 +111,21 @@ export function safeNext(next: string | null | undefined, fallback = "/dashboard
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return fallback;
   return next;
 }
+
+/** "Wednesday 23 December" */
+export function formatLongDay(date: string): string {
+  const p = parts(date);
+  return `${LONG_DAYS[p.weekday]} ${p.d} ${LONG_MONTHS[p.m - 1]}`;
+}
+
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+
+/** "21st to 23rd December 2026" (or "21st December 2026" for a single day, or across months when they differ). */
+export function formatOrdinalRange(from: string, to: string): string {
+  const a = parts(from);
+  const b = parts(to);
+  if (from === to) return `${ordinal(b.d)} ${LONG_MONTHS[b.m - 1]} ${b.y}`;
+  const start = a.m === b.m && a.y === b.y ? ordinal(a.d) : `${ordinal(a.d)} ${LONG_MONTHS[a.m - 1]}${a.y === b.y ? "" : ` ${a.y}`}`;
+  return `${start} to ${ordinal(b.d)} ${LONG_MONTHS[b.m - 1]} ${b.y}`;
+}
+

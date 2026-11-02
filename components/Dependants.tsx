@@ -3,36 +3,26 @@
 import { useState, type FormEvent } from "react";
 import { ChildEmergency, Collectors } from "@/components/ChildContacts";
 import { Avatar, DateParts, FormError, FormNotice, Loading, SelectField, TextAreaField, TextField } from "@/components/Form";
-import { RequireAuth } from "@/components/RequireAuth";
 import { api, friendlyError } from "@/lib/api";
 import { RELATIONSHIP_LABEL, ageOn, formatShortDate, initials, toIsoDate } from "@/lib/format";
 import type { AddDependant, Created, Dependant, Gender, GuardianRelationship } from "@/lib/types";
-import { useLoad } from "@/lib/useAsync";
 
-export default function ChildrenPage() {
-  return (
-    <RequireAuth>
-      <ChildrenScreen />
-    </RequireAuth>
-  );
-}
-
-function ChildrenScreen() {
-  const { data: kids, loading, error, reload } = useLoad(() => api.get<Dependant[]>("/dependant"));
+/** The Dependants card on the profile page: the children and teenagers under 18 this person is a parent or guardian of. */
+export function Dependants({ kids, loading, error, reload }: { kids: Dependant[] | null; loading: boolean; error: string | null; reload: () => Promise<void> | void }) {
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="container page-pad stack-6">
-      <div className="row between">
+    <div className="card" id="pf-kids">
+      <div className="card-h">
         <div>
-          <h1>Children</h1>
-          <p className="muted sm" style={{ marginTop: 4 }}>Children and teenagers under 18 you are a parent or guardian of. You register them and answer their permissions. Each has their own registration.</p>
+          <h2>Dependants</h2>
+          <div className="xs muted">Children and teenagers under 18 you are a parent or guardian of</div>
         </div>
-        {!adding && <button className="btn btn-primary" onClick={() => setAdding(true)}>+ Add a child</button>}
+        {!adding && <button type="button" className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add dependant</button>}
       </div>
 
       {adding && (
-        <AddChildForm
+        <AddDependantForm
           onDone={async () => {
             setAdding(false);
             await reload();
@@ -43,20 +33,20 @@ function ChildrenScreen() {
 
       <FormError message={error} />
       {loading && !kids && <Loading />}
-      {kids && kids.length === 0 && !adding && (
-        <div className="empty">
-          <h3>No children added yet</h3>
-          <p className="muted sm">Add a child to register them for an event.</p>
-        </div>
-      )}
+      {kids && kids.length === 0 && !adding && <p className="muted sm">No dependants added yet. Add a child to register them for an event.</p>}
       <div className="stack-4">
-        {kids?.map((k) => <ChildCard key={k.personId} child={k} onRemoved={reload} />)}
+        {kids?.map((k, i) => (
+          <div key={k.personId} className="stack-4">
+            {i > 0 && <hr className="divider" />}
+            <DependantRow child={k} onRemoved={reload} />
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function AddChildForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+function AddDependantForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [f, setF] = useState({ given: "", family: "", gender: "" as Gender | "", relationship: "Parent" as GuardianRelationship, confirm: false });
   const [dob, setDob] = useState({ d: "", m: "", y: "" });
   const [errors, setErrors] = useState<{ dob?: string; confirm?: string }>({});
@@ -85,8 +75,8 @@ function AddChildForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
   }
 
   return (
-    <form className="card stack-4" onSubmit={submit} style={{ background: "var(--surface-sunken)" }}>
-      <h2>Add a child</h2>
+    <form className="card stack-4" onSubmit={submit} style={{ background: "var(--surface-sunken)", boxShadow: "none", marginBottom: "var(--space-4)" }}>
+      <h3>Add a dependant</h3>
       <FormError message={error} />
       <div className="grid g2">
         <TextField label="First name" required maxLength={100} value={f.given} onChange={(e) => setF({ ...f, given: e.target.value })} />
@@ -96,7 +86,7 @@ function AddChildForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
           {Object.entries(RELATIONSHIP_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </SelectField>
         <SelectField label="Gender" value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value as Gender })}>
-          <option value="">Prefer not to say</option>
+          <option value="">Select</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
         </SelectField>
@@ -109,20 +99,21 @@ function AddChildForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         {errors.confirm && <span className="err" id="confirm-err">{errors.confirm}</span>}
       </div>
       <div className="row">
-        <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save child"}</button>
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+        <button className="btn btn-primary btn-sm" disabled={busy}>{busy ? "Saving…" : "Save dependant"}</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
       </div>
     </form>
   );
 }
 
-function ChildCard({ child, onRemoved }: { child: Dependant; onRemoved: () => void }) {
-  const [open, setOpen] = useState(false);
+function DependantRow({ child, onRemoved }: { child: Dependant; onRemoved: () => void }) {
+  const [panel, setPanel] = useState<"contacts" | "remove" | null>(null);
   const age = child.dateOfBirth ? ageOn(child.dateOfBirth) : null;
-  const panel = `child-${child.personId}`;
+  const panelId = `child-${child.personId}`;
+  const toggle = (p: "contacts" | "remove") => setPanel((cur) => (cur === p ? null : p));
 
   return (
-    <section className="card stack-4" aria-label={`${child.givenName} ${child.familyName}`}>
+    <section className="dep stack-4" aria-label={`${child.givenName} ${child.familyName}`}>
       <div className="row between">
         <div className="row">
           <Avatar>{initials(child.givenName)}</Avatar>
@@ -134,26 +125,33 @@ function ChildCard({ child, onRemoved }: { child: Dependant; onRemoved: () => vo
             </div>
           </div>
         </div>
-        <button className="btn btn-secondary btn-sm" aria-expanded={open} aria-controls={panel} onClick={() => setOpen((v) => !v)}>
-          {open ? "Hide details" : "Pick-up and contacts"}
-        </button>
+        <div className="row">
+          <button type="button" className="btn btn-secondary btn-sm" aria-expanded={panel === "contacts"} aria-controls={panelId} onClick={() => toggle("contacts")}>
+            Pick-up and contacts
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" aria-expanded={panel === "remove"} aria-controls={panelId} onClick={() => toggle("remove")}>
+            Remove
+          </button>
+        </div>
       </div>
-      {open && (
-        <div id={panel} className="stack-6">
-          <hr className="divider" />
-          <Collectors childId={child.personId} />
-          <hr className="divider" />
-          <ChildEmergency childId={child.personId} />
-          <hr className="divider" />
-          <RemoveChild child={child} onRemoved={onRemoved} />
+      {panel && (
+        <div id={panelId} className="stack-6">
+          {panel === "contacts" ? (
+            <>
+              <Collectors childId={child.personId} />
+              <hr className="divider" />
+              <ChildEmergency childId={child.personId} />
+            </>
+          ) : (
+            <RemoveDependant child={child} onRemoved={onRemoved} onCancel={() => setPanel(null)} />
+          )}
         </div>
       )}
     </section>
   );
 }
 
-function RemoveChild({ child, onRemoved }: { child: Dependant; onRemoved: () => void }) {
-  const [confirming, setConfirming] = useState(false);
+function RemoveDependant({ child, onRemoved, onCancel }: { child: Dependant; onRemoved: () => void; onCancel: () => void }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -174,8 +172,6 @@ function RemoveChild({ child, onRemoved }: { child: Dependant; onRemoved: () => 
   }
 
   if (notice) return <FormNotice message={notice} />;
-  if (!confirming)
-    return <div><button className="btn btn-ghost btn-sm" onClick={() => setConfirming(true)}>Remove {child.givenName}</button></div>;
   return (
     <form className="stack-4" onSubmit={submit}>
       <h3>Remove {child.givenName}?</h3>
@@ -184,7 +180,7 @@ function RemoveChild({ child, onRemoved }: { child: Dependant; onRemoved: () => 
       <TextAreaField label="Reason" required maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
       <div className="row">
         <button className="btn btn-danger btn-sm" disabled={busy || !reason.trim()}>{busy ? "Removing…" : `Remove ${child.givenName}`}</button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirming(false)}>Keep</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Keep</button>
       </div>
     </form>
   );
