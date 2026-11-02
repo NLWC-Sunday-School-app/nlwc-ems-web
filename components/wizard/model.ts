@@ -12,6 +12,8 @@ export interface Person {
   isSelf: boolean;
   /** Dependants are always children (0–12). Yourself is treated as an adult; the API refuses an under-18 self-registration. */
   isChild: boolean;
+  /** The marker shown beside the name: the account holder's role towards the people they register, or "Child". */
+  role?: string;
   hasDob: boolean;
 }
 
@@ -85,4 +87,12 @@ export function stepForTask(code: string): StepIndex {
   if (code === "emergency_contact") return 2;
   if (code.startsWith("consent_")) return 3;
   return 4;
+}
+
+/** What to call the account holder when they register dependants: "Parent", "Guardian" or "Parent / guardian"; "Adult" with none. */
+export function holderRole(relationships: string[]): string {
+  if (relationships.length === 0) return "Adult";
+  const parent = relationships.some((r) => r === "Parent");
+  const other = relationships.some((r) => r !== "Parent");
+  return parent && other ? "Parent / guardian" : parent ? "Parent" : "Guardian";
 }

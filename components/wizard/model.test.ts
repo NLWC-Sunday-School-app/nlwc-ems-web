@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { consentKinds, isPhysical, requiredConsentsGiven, stepForTask, type Entry, type Person } from "./model";
+import { consentKinds, holderRole, isPhysical, requiredConsentsGiven, stepForTask, type Entry, type Person } from "./model";
 
 const person = (over: Partial<Person>): Person => ({ personId: "p", given: "A", family: "B", age: 9, ageAtEvent: 9, isSelf: false, isChild: true, hasDob: true, ...over });
 
@@ -51,3 +51,13 @@ describe("requiredConsentsGiven", () => {
   });
 });
 
+
+describe("holderRole", () => {
+  it("names the account holder by how they relate to the people they register", () => {
+    expect(holderRole([])).toBe("Adult");
+    expect(holderRole(["Parent", "Parent"])).toBe("Parent");
+    expect(holderRole(["LegalGuardian"])).toBe("Guardian");
+    expect(holderRole(["Grandparent", "OtherRelative"])).toBe("Guardian");
+    expect(holderRole(["Parent", "Grandparent"])).toBe("Parent / guardian");
+  });
+});

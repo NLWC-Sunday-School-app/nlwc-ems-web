@@ -10,7 +10,7 @@ import { PermissionsStep, type ConsentAnswers } from "@/components/wizard/Permis
 import { ParticipantsStep } from "@/components/wizard/ParticipantsStep";
 import { PickupStep } from "@/components/wizard/PickupStep";
 import { ReviewStep, type SubmitResult } from "@/components/wizard/ReviewStep";
-import { requiredConsentsGiven, STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
+import { holderRole, requiredConsentsGiven, STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
 import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
@@ -64,8 +64,8 @@ function Wizard() {
 
         const start = new Date(`${ed.startsOn}T00:00:00`);
         const people: Person[] = [
-          { personId: profile.personId, given: profile.givenName, family: profile.familyName, age: profile.dateOfBirth ? ageOn(profile.dateOfBirth) : null, ageAtEvent: profile.dateOfBirth ? ageOn(profile.dateOfBirth, start) : null, isSelf: true, isChild: false, hasDob: !!profile.dateOfBirth },
-          ...kids.map((k) => ({ personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, hasDob: !!k.dateOfBirth })),
+          { personId: profile.personId, given: profile.givenName, family: profile.familyName, age: profile.dateOfBirth ? ageOn(profile.dateOfBirth) : null, ageAtEvent: profile.dateOfBirth ? ageOn(profile.dateOfBirth, start) : null, isSelf: true, isChild: false, role: holderRole(kids.map((k) => k.relationship)), hasDob: !!profile.dateOfBirth },
+          ...kids.map((k) => ({ personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, role: "Child", hasDob: !!k.dateOfBirth })),
         ];
         // Registrations for this edition: by id once the API returns it, else by the edition code at the start of the reference.
         const mine = regs.filter((r) => !DEAD.has(r.state) && (ed.id ? r.editionId === ed.id : editionCodeOf(r.reference) === ed.code));

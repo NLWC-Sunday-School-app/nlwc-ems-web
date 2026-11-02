@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Avatar } from "@/components/Form";
 import { MODE_LABEL, initials } from "@/lib/format";
 import type { ParticipationMode, PublicEdition } from "@/lib/types";
-import { campAges, campAllows, modesOf } from "@/lib/editions";
+import { ageAllowed, campAges, campAllows, modesOf } from "@/lib/editions";
 import type { Entry } from "./model";
 
 export function ParticipantsStep({
@@ -31,6 +31,13 @@ export function ParticipantsStep({
     }
   }, [entries, edition, onChange]);
 
+  // Anyone over the event's age limit can't take part, so they are never left ticked.
+  useEffect(() => {
+    for (const e of entries) {
+      if (e.selected && !e.registration && !ageAllowed(edition, e.person.ageAtEvent)) onChange(e.person.personId, { selected: false });
+    }
+  }, [entries, edition, onChange]);
+
   return (
     <div className="stack-4">
       <div>
@@ -44,16 +51,21 @@ export function ParticipantsStep({
         const reg = e.registration;
         const locked = !!reg; // the way of taking part is fixed once a registration exists
         const group = `mode-${p.personId}`;
+        const tooOld = !reg && !ageAllowed(edition, p.ageAtEvent);
         return (
           <div className="card mp stack-4" key={p.personId}>
             <label className="mp-head">
-              <input type="checkbox" checked={e.selected} onChange={(ev) => onChange(p.personId, { selected: ev.target.checked, error: undefined })} />
+              <input type="checkbox" checked={e.selected && !tooOld} disabled={tooOld} onChange={(ev) => onChange(p.personId, { selected: ev.target.checked, error: undefined })} />
               <Avatar>{initials(p.given)}</Avatar>
               <span>
-                <b>{name}</b>{p.isSelf && " (you)"}
+                <b>{name}</b>{p.isSelf && " (you)"}{p.role && <span className={`badge ${p.isChild ? "b-info" : "b-event"}`} style={{ marginLeft: 8, verticalAlign: "middle" }}>{p.role}</span>}
                 <span className="xs muted" style={{ display: "block" }}>{p.age != null ? (p.age === 1 ? "1 year old" : p.age < 1 ? "Under 1 year old" : `${p.age} years old`) : "Date of birth needed"}</span>
               </span>
             </label>
+
+            {tooOld && (
+              <p className="sm muted" role="note">{edition.name} is for people up to {edition.maxAge} years old{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
+            )}
 
             {e.selected && !p.hasDob && (
               <div className="alert warn" role="alert">

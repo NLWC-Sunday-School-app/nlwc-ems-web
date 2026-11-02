@@ -55,3 +55,7 @@
 /* The template marks the photos card done with a nested :has(), which browsers ignore. The step sets .done itself. */
 .perm-card.done .perm-ok { display: inline-flex; }
 .perm-card.done .perm-n { background: var(--ok-bg); border-color: var(--ok-solid); color: var(--ok-fg); }
+
+/* Short pages: the footer stays at the bottom of the window instead of leaving a blank band under it. */
+body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+body > main { flex: 1 0 auto; }

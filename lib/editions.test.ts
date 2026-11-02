@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { campAges, campAllows, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge } from "./editions";
+import { ageAllowed, campAges, campAllows, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge } from "./editions";
 import type { PublicEdition } from "./types";
 
 const edition = (over: Partial<PublicEdition> = {}): PublicEdition => ({
@@ -88,5 +88,17 @@ describe("campAllows", () => {
 describe("modesOf", () => {
   it("describes online as streaming", () => {
     expect(modesOf(edition()).find((m) => m.mode === "Online")?.blurb).toBe("Stream online.");
+  });
+});
+
+describe("ageAllowed", () => {
+  const e = (maxAge?: number | null) => ({ maxAge }) as PublicEdition;
+  it("stops anyone over the edition's limit and lets everyone through when there is none", () => {
+    expect(ageAllowed(e(20), 20)).toBe(true);
+    expect(ageAllowed(e(20), 21)).toBe(false);
+    expect(ageAllowed(e(20), 32)).toBe(false);
+    expect(ageAllowed(e(null), 32)).toBe(true);
+    expect(ageAllowed(e(undefined), 32)).toBe(true);
+    expect(ageAllowed(e(20), null)).toBe(true);
   });
 });

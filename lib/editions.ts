@@ -54,6 +54,11 @@ export function modesOf(e: PublicEdition): { mode: "Online" | "Day" | "Camp"; la
 export const campAges = (e: PublicEdition): string | null =>
   e.camp && (e.camp.minAge != null || e.camp.maxAge != null) ? `${e.camp.minAge ?? 0}${e.camp.maxAge != null ? `–${e.camp.maxAge}` : "+"}` : null;
 
+/** Whether someone of this age (on the day the event starts) is old enough to take part at all. Unknown age passes: the API decides. */
+export function ageAllowed(e: PublicEdition, age: number | null): boolean {
+  return e.maxAge == null || age == null || age <= e.maxAge;
+}
+
 /** Whether someone of this age (on the day the event starts) may ask for camp. Unknown age passes: the API decides. */
 export function campAllows(e: PublicEdition, age: number | null): boolean {
   if (!e.camp || (e.camp.minAge == null && e.camp.maxAge == null)) return false;
