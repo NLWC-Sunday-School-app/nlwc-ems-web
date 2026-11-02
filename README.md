@@ -49,3 +49,11 @@ The browser only talks to this origin. `next.config.mjs` rewrites `/api/v1/*` to
 3. A registration's participation mode **can't be changed** after creation, so the wizard offers "start this registration again" (cancels the draft).
 4. No endpoint to **resend the email verification link**, and none for **password reset**.
 5. Swagger is only served in Development, so typed clients can't be generated from a deployed API; the types here are hand-written.
+
+## Production deployment
+
+The production workflow builds pull requests targeting `main` without deploying. Pushes to `main` and manual runs on `main` publish a commit-tagged GHCR image and deploy it to the `prod` environment. Configure any required environment approval rules in GitHub.
+
+Set `SERVER_HOST`, `SERVER_USERNAME`, `SERVER_KEY`, and `GHCR_PAT` as secrets in the web repository’s `prod` environment. Set `SERVER_KEY_PASSPHRASE` only if the private key is encrypted. The server account must accept the matching SSH public key, and the PAT must be able to read the GHCR package. Install Docker Compose on the server and allow the Actions token to publish packages.
+
+The web app publishes port `3002` for the reverse proxy; verify that it is free and restrict direct access using the server firewall. Its API proxy is built for `http://host.docker.internal:8082`, using Docker’s host gateway to reach the production API. The API must be deployed on the same host and reachable on that port; Docker and firewall settings must permit the connection. Configure the public domain in the reverse proxy.
