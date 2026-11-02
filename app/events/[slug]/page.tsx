@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api";
-import { FaqList } from "@/components/FaqList";
 import { PriceLine } from "@/components/PriceLine";
 import { campAges, dateText, getEdition, isOpen, modesOf, pickupText, statusBadge } from "@/lib/editions";
 import { contentFor } from "@/lib/editionContent";
@@ -129,13 +128,6 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                 </div>
               )}
             </section>
-
-            {content && content.faq.length > 0 && (
-              <section className="ev-sec">
-                <h2>Frequently asked questions</h2>
-                <FaqList items={content.faq} />
-              </section>
-            )}
 
             {e.venue && mapQuery && (
               <section className="ev-sec ev-venue">
