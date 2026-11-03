@@ -103,7 +103,6 @@ export function ParticipantsStep({
                       })}
                     </div>
                     {e.mode === "Camp" && <p className="sm muted">Camp is a request. Our team reviews it before a bed is offered.</p>}
-                    {e.mode === "Day" && p.isChild && <p className="sm muted">Check in and out each day. A pass alone never releases a child.</p>}
                     {e.mode === "Online" && <p className="sm muted">Stream online from home. No check-in or pick-up.</p>}
                   </>
                 )}
@@ -120,7 +119,6 @@ export function ParticipantsStep({
         );
       })}
       {entries.length === 0 && <div className="empty"><p className="muted sm">No one to register yet. <>Add a dependant in <Link href="/profile#pf-kids">your profile</Link>, or complete your profile.</></p></div>}
-      <p className="xs muted">Age is worked out by the system at the event's start from the date of birth. Eligibility is checked when you continue.</p>
     </div>
   );
 }
