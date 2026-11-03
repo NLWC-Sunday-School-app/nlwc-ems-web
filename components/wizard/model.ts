@@ -28,8 +28,8 @@ export interface Entry {
   error?: string;
 }
 
-export const STEPS = ["Participants", "Health & care", "Pick-up", "Permissions", "Review"] as const;
-export type StepIndex = 0 | 1 | 2 | 3 | 4;
+export const STEPS = ["Participants", "Health & care", "Permissions", "Review"] as const;
+export type StepIndex = 0 | 1 | 2 | 3;
 
 export const isPhysical = (mode: ParticipationMode) => mode === "Day" || mode === "Camp";
 
@@ -43,10 +43,13 @@ export const consentKinds = (p: Person): ConsentKind[] =>
 /** What the family has answered: registrationId → kind → yes/no. A missing kind is "not answered". */
 export type ConsentAnswers = Record<string, Partial<Record<ConsentKind, boolean>>>;
 
-/** True once every required consent has been given for everyone being registered. Photos and videos are optional, so a
- * missing or declined answer there never blocks. The API still has the final say at submit. */
+/** True once every required consent has been given for everyone being registered, and a child's photos-and-videos question
+ * has been answered either way (a "no" is fine, but it can't be left unanswered). The API still has the final say at submit. */
 export function requiredConsentsGiven(entries: Entry[], answers: ConsentAnswers): boolean {
-  return entries.length > 0 && entries.every((e) => consentKinds(e.person).filter((k) => k !== "Media").every((k) => answers[e.registration?.id ?? ""]?.[k] === true));
+  return entries.length > 0 && entries.every((e) => {
+    const given = answers[e.registration?.id ?? ""];
+    return consentKinds(e.person).every((k) => (k === "Media" ? given?.[k] !== undefined : given?.[k] === true));
+  });
 }
 
 export const CONSENT_TITLE: Record<ConsentKind, string> = {
@@ -84,9 +87,8 @@ export const CONDITIONS: { value: string; label: string }[] = [
 /** Where to send someone to fix an open task. */
 export function stepForTask(code: string): StepIndex {
   if (code === "health") return 1;
-  if (code === "emergency_contact") return 2;
-  if (code.startsWith("consent_")) return 3;
-  return 4;
+  if (code.startsWith("consent_")) return 2;
+  return 3;
 }
 
 /** What to call the account holder when they register dependants: "Parent", "Guardian" or "Parent / guardian"; "Adult" with none. */

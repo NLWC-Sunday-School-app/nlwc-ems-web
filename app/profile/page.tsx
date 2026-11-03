@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Dependants } from "@/components/Dependants";
-import { EmergencyContactForm } from "@/components/EmergencyContactForm";
 import { Avatar, DateParts, FormError, FormNotice, Loading, SelectField, TextField } from "@/components/Form";
 import { LocalNav } from "@/components/LocalNav";
 import { PlaceFields } from "@/components/PlaceFields";
@@ -39,7 +38,6 @@ function ProfileScreen() {
   const sections = useMemo(
     () => [
       { id: "pf-details", label: "My details" },
-      { id: "pf-emergency", label: "Emergency contact" },
       { id: "pf-kids", label: "Dependants", badge: kids.data?.length ?? null },
     ],
     [kids.data?.length],
@@ -193,10 +191,6 @@ function ProfileScreen() {
               )}
             </div>
           </form>
-
-          <div className="card" id="pf-emergency">
-            <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" optional />
-          </div>
 
           <Dependants kids={kids.data ?? null} loading={kids.loading} error={kids.error} reload={kids.reload} />
         </div>

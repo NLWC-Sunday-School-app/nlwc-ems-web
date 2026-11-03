@@ -20,7 +20,7 @@ describe("registration helpers", () => {
     expect(isEditable(reg({ state: "NeedsAction" }))).toBe(true);
     expect(isEditable(reg({ state: "Confirmed" }))).toBe(false);
     expect(isLive(reg({ state: "Cancelled" }))).toBe(false);
-    expect(canCancel(reg({ state: "Confirmed" }))).toBe(true);
+    expect(canCancel(reg({ state: "Confirmed" }))).toBe(false);
     expect(canCancel(reg({ state: "Completed" }))).toBe(false);
   });
 });

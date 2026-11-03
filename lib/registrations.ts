@@ -19,4 +19,4 @@ export function editionOf(reg: Registration, editions: PublicEdition[]): PublicE
 
 export const isEditable = (reg: Registration) => reg.state === "Draft" || reg.state === "NeedsAction";
 export const isLive = (reg: Registration) => !["Cancelled", "Rejected", "Expired"].includes(reg.state);
-export const canCancel = (reg: Registration) => ["Draft", "ProvisionalPendingClaim", "Submitted", "NeedsAction", "Confirmed"].includes(reg.state);
+export const canCancel = (reg: Registration) => ["Draft", "ProvisionalPendingClaim", "Submitted", "NeedsAction"].includes(reg.state);

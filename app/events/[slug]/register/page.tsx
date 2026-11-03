@@ -8,7 +8,6 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { HealthStep, emptyHealth, toHealthInput, type HealthAnswer } from "@/components/wizard/HealthStep";
 import { PermissionsStep, type ConsentAnswers } from "@/components/wizard/PermissionsStep";
 import { ParticipantsStep } from "@/components/wizard/ParticipantsStep";
-import { PickupStep } from "@/components/wizard/PickupStep";
 import { ReviewStep, type SubmitResult } from "@/components/wizard/ReviewStep";
 import { holderRole, requiredConsentsGiven, STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
 import { ApiError, api, friendlyError } from "@/lib/api";
@@ -72,14 +71,14 @@ function Wizard() {
 
         const next: Entry[] = [];
         const settled: { person: Person; reg: Registration }[] = [];
-        let resumeStep = 4;
+        let resumeStep = 3;
         for (const person of people) {
           const reg = mine.find((r) => r.personId === person.personId);
           if (reg && !EDITABLE.has(reg.state)) {
             settled.push({ person, reg });
             continue;
           }
-          if (reg) resumeStep = Math.min(resumeStep, Math.max(0, Math.min(4, Number((reg.draft as { step?: number }).step ?? 0))));
+          if (reg) resumeStep = Math.min(resumeStep, Math.max(0, Math.min(3, Number((reg.draft as { step?: number }).step ?? 0))));
           next.push({
             person,
             selected: !!reg,
@@ -141,7 +140,7 @@ function Wizard() {
 
   // Reviews are loaded fresh each time the review step opens.
   useEffect(() => {
-    if (step !== 4 || live.length === 0) return;
+    if (step !== 3 || live.length === 0) return;
     let alive = true;
     setReviewing(true);
     Promise.all(live.map((e) => api.get<Review>(`/registration/${e.registration!.id}/review`).then((r) => [e.registration!.id, r] as const)))
@@ -317,8 +316,7 @@ function Wizard() {
 
         {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} />}
         {step === 1 && <HealthStep entries={live} answers={health} setAnswer={(id, patch) => setHealth((h) => ({ ...h, [id]: { ...(h[id] ?? emptyHealth()), ...patch } }))} errors={healthErrors} />}
-        {step === 2 && <PickupStep entries={live} />}
-        {step === 3 && (
+        {step === 2 && (
           <PermissionsStep
             edition={edition}
             entries={live}
@@ -328,20 +326,20 @@ function Wizard() {
             setError={(id, m) => setConsentErrors((c) => (m ? { ...c, [id]: m } : Object.fromEntries(Object.entries(c).filter(([k]) => k !== id))))}
           />
         )}
-        {step === 4 && <ReviewStep edition={edition} entries={live} reviews={reviews} results={results} loading={reviewing && Object.keys(reviews).length === 0} onGoTo={goTo} />}
+        {step === 3 && <ReviewStep edition={edition} entries={live} reviews={reviews} results={results} loading={reviewing && Object.keys(reviews).length === 0} onGoTo={goTo} />}
 
         <FormError message={error} />
 
-        {step === 3 && !consentsReady && (
-          <p className="xs muted" id="consent-hint" role="status">Give the parent consent and confirm the pick-up notice to continue. Photos and videos are optional.</p>
+        {step === 2 && !consentsReady && (
+          <p className="xs muted" id="consent-hint" role="status">Give the parent consent, confirm the pick-up notice and answer the photos and videos question for each child to continue.</p>
         )}
 
         <div className="wiz-actions">
           {step > 0 ? <button type="button" className="btn btn-secondary" onClick={() => goTo((step - 1) as StepIndex)} disabled={busy}>Back</button> : <span />}
           <div className="row">
             {live.length > 0 && <button type="button" className="btn btn-ghost" onClick={saveAndExit} disabled={busy}>Save draft and exit</button>}
-            {step < 4 ? (
-              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 3 && !consentsReady)} aria-describedby={step === 3 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
+            {step < 3 ? (
+              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 2 && !consentsReady)} aria-describedby={step === 2 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={submit} disabled={busy || reviewing || !live.some((e) => reviews[e.registration!.id]?.canSubmit && !results[e.registration!.id]?.ok)}>
                 {busy ? "Submitting…" : "Submit registration"}

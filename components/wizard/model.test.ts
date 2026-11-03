@@ -15,10 +15,9 @@ describe("wizard model", () => {
   });
   it("sends each open task to the step that fixes it", () => {
     expect(stepForTask("health")).toBe(1);
-    expect(stepForTask("emergency_contact")).toBe(2);
-    expect(stepForTask("consent_media")).toBe(3);
-    expect(stepForTask("consent_terms")).toBe(3);
-    expect(stepForTask("something_else")).toBe(4);
+    expect(stepForTask("consent_media")).toBe(2);
+    expect(stepForTask("consent_terms")).toBe(2);
+    expect(stepForTask("something_else")).toBe(3);
   });
 });
 
@@ -27,18 +26,19 @@ describe("requiredConsentsGiven", () => {
     person: person({ personId: id, ...over }), selected: true, mode: "Day", studio: false,
     registration: { id: `reg-${id}` } as Entry["registration"],
   });
-  const yes = { GuardianAuthorization: true, MedicalEmergency: true, Terms: true } as const;
+  const yes = { GuardianAuthorization: true, MedicalEmergency: true, Terms: true, Media: true } as const;
 
   it("is false until there is someone to register", () => {
     expect(requiredConsentsGiven([], {})).toBe(false);
   });
-  it("needs parent consent and the pick-up notice for a child, but not the photo answer", () => {
+  it("needs parent consent, the pick-up notice and an answer on photos for a child", () => {
     const kid = entry("k");
     expect(requiredConsentsGiven([kid], {})).toBe(false);
     expect(requiredConsentsGiven([kid], { "reg-k": { GuardianAuthorization: true, MedicalEmergency: true } })).toBe(false); // pick-up not yet understood
     expect(requiredConsentsGiven([kid], { "reg-k": { Terms: true } })).toBe(false); // parent consent missing
     expect(requiredConsentsGiven([kid], { "reg-k": { ...yes } })).toBe(true);
-    expect(requiredConsentsGiven([kid], { "reg-k": { ...yes, Media: false } })).toBe(true);
+    expect(requiredConsentsGiven([kid], { "reg-k": { ...yes, Media: false } })).toBe(true); // a "no" is an answer
+    expect(requiredConsentsGiven([kid], { "reg-k": { GuardianAuthorization: true, MedicalEmergency: true, Terms: true } })).toBe(false); // photos unanswered
   });
   it("counts a declined required answer as not given", () => {
     expect(requiredConsentsGiven([entry("k")], { "reg-k": { ...yes, MedicalEmergency: false } })).toBe(false);

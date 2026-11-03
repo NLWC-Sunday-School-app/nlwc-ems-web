@@ -81,7 +81,7 @@ export function ReviewStep({
       {pickup && anyDay && (
         <div className="alert warn">
           <span aria-hidden="true">⏱</span>
-          <div><b>Walk-in children are picked up {pickup.replace(" daily", "")} every day.</b>Remember who is on each child's pick-up list.</div>
+          <div><b>Walk-in children are picked up {pickup.replace(" daily", "")} every day.</b></div>
         </div>
       )}
       {holding.length > 0 && (
@@ -90,7 +90,7 @@ export function ReviewStep({
           <div>
             <b>You can submit now.</b>
             {holding.map((e) => e.person.given).join(" and ")}'s pass stays "Pending" until the photo and video permission is answered.{" "}
-            <button type="button" className="link-btn" onClick={() => onGoTo(3)}>Answer it now</button>
+            <button type="button" className="link-btn" onClick={() => onGoTo(2)}>Answer it now</button>
           </div>
         </div>
       )}
