@@ -136,7 +136,7 @@ function RegistrationCard({ reg, who, edition, review, onChanged }: { reg: Regis
       </div>
       <div className="axes">
         <div><b>Registration</b><StatusBadge state={reg.state} /></div>
-        <div><b>Payment</b><span className="badge b-neutral">{paid ? "See event" : "Not required"}</span></div>
+        {paid && <div><b>Payment</b><span className="badge b-neutral">See event</span></div>}
         {review?.holdsPass && <div><b>Pass</b><span className="badge b-warn">⏱ Pending permission</span></div>}
       </div>
       {canCancel(reg) && !cancelling && <div><button className="btn btn-ghost btn-sm" onClick={() => setCancelling(true)}>Cancel registration</button></div>}

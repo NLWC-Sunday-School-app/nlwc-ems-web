@@ -118,6 +118,16 @@ function Wizard() {
   const chosen = useMemo(() => entries.filter((e) => e.selected), [entries]);
   const live = useMemo(() => active(entries), [entries]);
 
+  const HEALTH_MESSAGE = "Please finish the health answers marked below.";
+  /** Records a health answer and clears that person's warning as soon as they change it; the form-level warning goes once none are left. */
+  const answerHealth = useCallback((id: string, patch: Partial<HealthAnswer>) => {
+    setHealth((h) => ({ ...h, [id]: { ...(h[id] ?? emptyHealth()), ...patch } }));
+    if (!(id in healthErrors)) return;
+    const { [id]: _removed, ...rest } = healthErrors;
+    setHealthErrors(rest);
+    if (Object.keys(rest).length === 0) setError((e) => (e === HEALTH_MESSAGE ? null : e));
+  }, [healthErrors]);
+
   const patchEntry = useCallback((personId: string, patch: Partial<Entry>) => setEntries((es) => es.map((e) => (e.person.personId === personId ? { ...e, ...patch } : e))), []);
 
   /** Saves the step and each person's studio request, so a family can resume on another device. Failures are not fatal. */
@@ -196,7 +206,7 @@ function Wizard() {
       }
     }
     setHealthErrors(errs);
-    if (Object.keys(errs).length) setError("Please finish the health answers marked below.");
+    if (Object.keys(errs).length) setError(HEALTH_MESSAGE);
     return Object.keys(errs).length === 0;
   }
 
@@ -315,7 +325,7 @@ function Wizard() {
         <h2 className="sr" tabIndex={-1} ref={headingRef}>Step {step + 1} of {STEPS.length}: {STEPS[step]}</h2>
 
         {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} />}
-        {step === 1 && <HealthStep entries={live} answers={health} setAnswer={(id, patch) => setHealth((h) => ({ ...h, [id]: { ...(h[id] ?? emptyHealth()), ...patch } }))} errors={healthErrors} />}
+        {step === 1 && <HealthStep entries={live} answers={health} setAnswer={answerHealth} errors={healthErrors} />}
         {step === 2 && (
           <PermissionsStep
             edition={edition}
