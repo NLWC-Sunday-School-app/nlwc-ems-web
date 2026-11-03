@@ -39,7 +39,7 @@ export function ParticipantsStep({
   // Anyone over the event's age limit, or with no date of birth (so no way to tell their age), can't take part: never left ticked.
   useEffect(() => {
     for (const e of entries) {
-      if (e.selected && !e.registration && (!e.person.hasDob || !ageAllowed(edition, e.person.ageAtEvent))) onChange(e.person.personId, { selected: false });
+      if (e.selected && ((!e.registration && !e.person.hasDob) || (e.person.hasDob && !ageAllowed(edition, e.person.ageAtEvent)))) onChange(e.person.personId, { selected: false });
     }
   }, [entries, edition, onChange]);
 
@@ -56,7 +56,8 @@ export function ParticipantsStep({
         const reg = e.registration;
         const locked = !!reg; // the way of taking part is fixed once a registration exists
         const group = `mode-${p.personId}`;
-        const tooOld = !reg && p.hasDob && !ageAllowed(edition, p.ageAtEvent);
+        const tooOld = p.hasDob && !ageAllowed(edition, p.ageAtEvent);
+        const tooYoung = tooOld && edition.minAge != null && p.ageAtEvent != null && p.ageAtEvent < edition.minAge;
         const noDob = !reg && !p.hasDob;   // eligibility depends on age, so nobody can be ticked without a date of birth
         return (
           <div className="card mp stack-4" key={p.personId}>
@@ -70,7 +71,7 @@ export function ParticipantsStep({
             </label>
 
             {tooOld && (
-              <p className="sm muted" role="note">{edition.name} is for people up to {edition.maxAge} years old{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
+              <p className="sm muted" role="note">{edition.name} is for people {tooYoung ? `aged ${edition.minAge} and over` : `up to ${edition.maxAge} years old`}{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
             )}
 
             {noDob && (

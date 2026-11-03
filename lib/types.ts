@@ -80,6 +80,7 @@ export interface PublicEdition {
   endsOn: string;
   venue?: { name: string; address?: string | null } | null;
   /** Oldest age (on the day the event starts) that may register, in any mode. Absent means no limit. */
+  minAge?: number | null;
   maxAge?: number | null;
   camp?: { minAge?: number | null; maxAge?: number | null } | null;
   pickupWindow?: { start: string; end: string } | null;

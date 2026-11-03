@@ -101,4 +101,10 @@ describe("ageAllowed", () => {
     expect(ageAllowed(e(undefined), 32)).toBe(true);
     expect(ageAllowed(e(20), null)).toBe(true);
   });
+  it("stops anyone under the edition's minimum", () => {
+    const m = { minAge: 3, maxAge: 16 } as PublicEdition;
+    expect(ageAllowed(m, 2)).toBe(false);
+    expect(ageAllowed(m, 3)).toBe(true);
+    expect(ageAllowed(m, 16)).toBe(true);
+  });
 });

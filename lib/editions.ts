@@ -56,7 +56,7 @@ export const campAges = (e: PublicEdition): string | null =>
 
 /** Whether someone of this age (on the day the event starts) is old enough to take part at all. Unknown age passes: the API decides. */
 export function ageAllowed(e: PublicEdition, age: number | null): boolean {
-  return e.maxAge == null || age == null || age <= e.maxAge;
+  return age == null || ((e.maxAge == null || age <= e.maxAge) && (e.minAge == null || age >= e.minAge));
 }
 
 /** Whether someone of this age (on the day the event starts) may ask for camp. Unknown age passes: the API decides. */
