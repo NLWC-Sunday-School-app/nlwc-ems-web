@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AddDependantForm } from "@/components/Dependants";
 import { Avatar } from "@/components/Form";
 import { MODE_LABEL, initials } from "@/lib/format";
 import type { ParticipationMode, PublicEdition } from "@/lib/types";
@@ -13,13 +14,17 @@ export function ParticipantsStep({
   entries,
   onChange,
   onRestart,
+  onDependantAdded,
 }: {
   edition: PublicEdition;
   entries: Entry[];
   onChange: (personId: string, patch: Partial<Entry>) => void;
   /** Cancels the person's draft so they can pick a different way of taking part. */
   onRestart: (personId: string) => void;
+  /** Called after a new dependant is saved so the list can pick them up. */
+  onDependantAdded: () => Promise<void> | void;
 }) {
+  const [adding, setAdding] = useState(false);
   const modes = modesOf(edition);
   const camp = campAges(edition);
   const studio = edition.capabilities.includes("StudioRequests");
@@ -118,7 +123,19 @@ export function ParticipantsStep({
           </div>
         );
       })}
-      {entries.length === 0 && <div className="empty"><p className="muted sm">No one to register yet. <>Add a dependant in <Link href="/profile#pf-kids">your profile</Link>, or complete your profile.</></p></div>}
+      {entries.length === 0 && !adding && <div className="empty"><p className="muted sm">No one to register yet. Add a child below, or complete your profile.</p></div>}
+
+      {adding ? (
+        <AddDependantForm
+          onDone={async () => {
+            await onDependantAdded();
+            setAdding(false);
+          }}
+          onCancel={() => setAdding(false)}
+        />
+      ) : (
+        <div><button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(true)}>+ Add a dependant</button></div>
+      )}
     </div>
   );
 }

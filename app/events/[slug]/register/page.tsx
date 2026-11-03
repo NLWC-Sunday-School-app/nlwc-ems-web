@@ -15,7 +15,7 @@ import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Dependant, Profile, PublicEdition, Registration, Review } from "@/lib/types";
+import type { Dependant, ParticipationMode, Profile, PublicEdition, Registration, Review } from "@/lib/types";
 
 export default function RegisterPage() {
   return (
@@ -100,6 +100,21 @@ function Wizard() {
       alive = false;
     };
   }, [slug]);
+
+  /** After a dependant is added from the Participants step: fetch the list and append anyone new, leaving existing choices alone. */
+  const addedDependant = useCallback(async () => {
+    if (!edition) return;
+    const kids = await api.get<Dependant[]>("/dependant");
+    const start = new Date(`${edition.startsOn}T00:00:00`);
+    setEntries((es) => {
+      const known = new Set(es.map((e) => e.person.personId));
+      const fresh: Entry[] = kids.filter((k) => !known.has(k.personId)).map((k) => ({
+        person: { personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, role: "Child", hasDob: !!k.dateOfBirth },
+        selected: false, mode: "Day" as ParticipationMode, studio: false,
+      }));
+      return [...es, ...fresh];
+    });
+  }, [edition]);
 
   const chosen = useMemo(() => entries.filter((e) => e.selected), [entries]);
   const live = useMemo(() => active(entries), [entries]);
@@ -300,9 +315,9 @@ function Wizard() {
 
         <h2 className="sr" tabIndex={-1} ref={headingRef}>Step {step + 1} of {STEPS.length}: {STEPS[step]}</h2>
 
-        {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} />}
+        {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} />}
         {step === 1 && <HealthStep entries={live} answers={health} setAnswer={(id, patch) => setHealth((h) => ({ ...h, [id]: { ...(h[id] ?? emptyHealth()), ...patch } }))} errors={healthErrors} />}
-        {step === 2 && <PickupStep edition={edition} entries={live} />}
+        {step === 2 && <PickupStep entries={live} />}
         {step === 3 && (
           <PermissionsStep
             edition={edition}
