@@ -1,6 +1,6 @@
 # End-to-end walk-through
 
-A real-browser run of the whole portal against a real API and Postgres. It is a script, not part of CI.
+A real-browser run of the whole portal against a real API and MySQL. It is a script, not part of CI.
 
 It covers: events list and event page, route guard, sign-up (field errors), email verification (including a reused link),
 log-in with `next`, profile (date of birth set once, then locked), children (13+ refused, collectors on specific days),
@@ -9,12 +9,12 @@ lists what the API says is open, Save draft and resume, partial progress, submit
 medical data in browser storage, sign-out. It writes screenshots to `e2e/out/`.
 
 ```bash
-# 1. Postgres
-docker run -d --name nlwc-web-pg -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=nlwc_web -p 5501:5432 postgres:16
+# 1. MySQL
+docker run -d --name nlwc-web-pg -e MYSQL_ROOT_PASSWORD=pw -e MYSQL_DATABASE=nlwc_web -p 5501:3306 mysql:8.0 --log-bin-trust-function-creators=1
 
 # 2. The API (from the nlwc-ems-api repo). The public edition endpoint must return `id` (see README, "API gaps").
 dotnet publish nlwc-ems.api -c Release -o /tmp/nlwc-web-api
-export ConnectionStrings__EmsDatabase="Host=localhost;Port=5501;Database=nlwc_web;Username=postgres;Password=pw"
+export ConnectionStrings__EmsDatabase="Server=localhost;Port=5501;Database=nlwc_web;User=root;Password=pw"
 export Security__MasterKey="$(python3 -c "print('ab'*32)")"   # 64 hex characters
 export Security__CookieSecure=false Cors__AllowedOrigins__0=http://localhost:3000
 export ASPNETCORE_URLS=http://localhost:4010 ASPNETCORE_ENVIRONMENT=Development

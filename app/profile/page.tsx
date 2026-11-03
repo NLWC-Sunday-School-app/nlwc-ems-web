@@ -195,7 +195,7 @@ function ProfileScreen() {
           </form>
 
           <div className="card" id="pf-emergency">
-            <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" />
+            <EmergencyContactForm path="/emergency-contact" initial={profile.emergencyContact} title="My emergency contact" optional />
           </div>
 
           <Dependants kids={kids.data ?? null} loading={kids.loading} error={kids.error} reload={kids.reload} />

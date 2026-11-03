@@ -5,7 +5,7 @@ import json, hmac, hashlib, struct, time, base64, subprocess, os, sys, urllib.re
 API = os.environ.get("API_URL", "http://localhost:4010")
 BASE = API + "/api/v1"
 API_DLL = os.environ.get("API_DLL", "/tmp/nlwc-web-api/nlwc.ems.api.dll")
-PG = os.environ.get("PG_CONTAINER", "nlwc-web-pg")
+PG = os.environ.get("PG_CONTAINER", "nlwc-web-pg")   # the MySQL container
 PG_DB = os.environ.get("PG_DB", "nlwc_web")
 ORIGIN = "http://localhost:3000"
 
@@ -47,7 +47,7 @@ a = admin("seed-a@example.com"); b = admin("seed-b@example.com")
 def account_id(c):
     return c.call("GET", "/auth/me")[1]["data"]["personId"]
 import subprocess as sp
-def sql(q): return sp.run(["docker","exec",PG,"psql","-U","postgres","-d",PG_DB,"-tA","-c",q],capture_output=True,text=True).stdout.strip()
+def sql(q): return sp.run(["docker","exec","-e","MYSQL_PWD=pw",PG,"mysql","-uroot","-N","-B",PG_DB,"-e",q],capture_output=True,text=True).stdout.strip()
 aid = sql("select id from accounts where email='seed-a@example.com'"); bid = sql("select id from accounts where email='seed-b@example.com'")
 print("grant", a.call("POST", "/rolegrant", {"accountId": aid, "role": "event_admin", "reason": "seed"})[0], a.call("POST", "/rolegrant", {"accountId": bid, "role": "finance_officer", "reason": "seed"})[0])
 s, d = a.call("POST", "/edition", {"templateCode": "BB", "slug": "bible-bootcamp-2026", "code": "BB26", "name": "Bible Bootcamp 2026", "startsOn": "2026-12-21", "endsOn": "2026-12-23",

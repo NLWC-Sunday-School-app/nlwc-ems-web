@@ -31,10 +31,10 @@ export function ParticipantsStep({
     }
   }, [entries, edition, onChange]);
 
-  // Anyone over the event's age limit can't take part, so they are never left ticked.
+  // Anyone over the event's age limit, or with no date of birth (so no way to tell their age), can't take part: never left ticked.
   useEffect(() => {
     for (const e of entries) {
-      if (e.selected && !e.registration && !ageAllowed(edition, e.person.ageAtEvent)) onChange(e.person.personId, { selected: false });
+      if (e.selected && !e.registration && (!e.person.hasDob || !ageAllowed(edition, e.person.ageAtEvent))) onChange(e.person.personId, { selected: false });
     }
   }, [entries, edition, onChange]);
 
@@ -51,11 +51,12 @@ export function ParticipantsStep({
         const reg = e.registration;
         const locked = !!reg; // the way of taking part is fixed once a registration exists
         const group = `mode-${p.personId}`;
-        const tooOld = !reg && !ageAllowed(edition, p.ageAtEvent);
+        const tooOld = !reg && p.hasDob && !ageAllowed(edition, p.ageAtEvent);
+        const noDob = !reg && !p.hasDob;   // eligibility depends on age, so nobody can be ticked without a date of birth
         return (
           <div className="card mp stack-4" key={p.personId}>
             <label className="mp-head">
-              <input type="checkbox" checked={e.selected && !tooOld} disabled={tooOld} onChange={(ev) => onChange(p.personId, { selected: ev.target.checked, error: undefined })} />
+              <input type="checkbox" checked={e.selected && !tooOld && !noDob} disabled={tooOld || noDob} onChange={(ev) => onChange(p.personId, { selected: ev.target.checked, error: undefined })} />
               <Avatar>{initials(p.given)}</Avatar>
               <span>
                 <b>{name}</b>{p.isSelf && " (you)"}{p.role && <span className={`badge ${p.isChild ? "b-info" : "b-event"}`} style={{ marginLeft: 8, verticalAlign: "middle" }}>{p.role}</span>}
@@ -67,9 +68,10 @@ export function ParticipantsStep({
               <p className="sm muted" role="note">{edition.name} is for people up to {edition.maxAge} years old{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
             )}
 
-            {e.selected && !p.hasDob && (
-              <div className="alert warn" role="alert">
-                <div><b>Add a date of birth first.</b>{p.isSelf ? <> <Link href="/profile">Open your profile</Link> to add yours.</> : " We need it to register them."}</div>
+            {noDob && (
+              <div className="alert warn" role="note">
+                <div><b>Add a date of birth first.</b> We check each person's age before they can be registered.{" "}
+                  {p.isSelf ? <><Link href="/profile">Open your profile</Link> to add yours.</> : <><Link href="/profile#pf-kids">Open your profile</Link> to add {p.given}'s.</>}</div>
               </div>
             )}
 
