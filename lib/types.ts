@@ -110,3 +110,6 @@ export interface Health { none: boolean; conditions: string[]; allergies?: strin
 export interface HealthInput { none: boolean; conditions?: string[]; allergies?: string; notes?: string }
 export interface Consent { kind: ConsentKind; accepted: boolean; documentId: string; documentVersion: number; answeredAt: string }
 export interface Created { id: string }
+
+/** A person the family named to call about any of its children. */
+export interface EmergencyContact { id: string; fullName: string; relationship: string; phone: string }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Dependants } from "@/components/Dependants";
+import { EmergencyContacts } from "@/components/EmergencyContacts";
 import { Avatar, DateParts, FormError, FormNotice, Loading, SelectField, TextField } from "@/components/Form";
 import { LocalNav } from "@/components/LocalNav";
 import { PlaceFields } from "@/components/PlaceFields";
@@ -39,6 +40,7 @@ function ProfileScreen() {
     () => [
       { id: "pf-details", label: "My details" },
       { id: "pf-kids", label: "Dependants", badge: kids.data?.length ?? null },
+      { id: "pf-emergency", label: "Emergency contacts" },
     ],
     [kids.data?.length],
   );
@@ -193,6 +195,8 @@ function ProfileScreen() {
           </form>
 
           <Dependants kids={kids.data ?? null} loading={kids.loading} error={kids.error} reload={kids.reload} />
+
+          <EmergencyContacts />
         </div>
       </div>
     </div>

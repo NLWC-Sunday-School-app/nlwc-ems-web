@@ -7,6 +7,7 @@ import { FormError, Loading } from "@/components/Form";
 import { RequireAuth } from "@/components/RequireAuth";
 import { HealthStep, emptyHealth, toHealthInput, type HealthAnswer } from "@/components/wizard/HealthStep";
 import { PermissionsStep, type ConsentAnswers } from "@/components/wizard/PermissionsStep";
+import { ContactsStep } from "@/components/wizard/ContactsStep";
 import { ParticipantsStep } from "@/components/wizard/ParticipantsStep";
 import { ReviewStep, type SubmitResult } from "@/components/wizard/ReviewStep";
 import { holderRole, requiredConsentsGiven, STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
@@ -14,7 +15,7 @@ import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Dependant, ParticipationMode, Profile, PublicEdition, Registration, Review } from "@/lib/types";
+import type { Dependant, EmergencyContact, ParticipationMode, Profile, PublicEdition, Registration, Review } from "@/lib/types";
 
 export default function RegisterPage() {
   return (
@@ -43,6 +44,7 @@ function Wizard() {
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
   const [consents, setConsents] = useState<ConsentAnswers>({});
   const [consentErrors, setConsentErrors] = useState<Record<string, string>>({});
+  const [contactCount, setContactCount] = useState<number | null>(null);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [reviewing, setReviewing] = useState(false);
   const [results, setResults] = useState<Record<string, SubmitResult>>({});
@@ -71,14 +73,14 @@ function Wizard() {
 
         const next: Entry[] = [];
         const settled: { person: Person; reg: Registration }[] = [];
-        let resumeStep = 3;
+        let resumeStep = 4;
         for (const person of people) {
           const reg = mine.find((r) => r.personId === person.personId);
           if (reg && !EDITABLE.has(reg.state)) {
             settled.push({ person, reg });
             continue;
           }
-          if (reg) resumeStep = Math.min(resumeStep, Math.max(0, Math.min(3, Number((reg.draft as { step?: number }).step ?? 0))));
+          if (reg) resumeStep = Math.min(resumeStep, Math.max(0, Math.min(4, Number((reg.draft as { step?: number }).step ?? 0))));
           next.push({
             person,
             selected: !!reg,
@@ -150,7 +152,7 @@ function Wizard() {
 
   // Reviews are loaded fresh each time the review step opens.
   useEffect(() => {
-    if (step !== 3 || live.length === 0) return;
+    if (step !== 4 || live.length === 0) return;
     let alive = true;
     setReviewing(true);
     Promise.all(live.map((e) => api.get<Review>(`/registration/${e.registration!.id}/review`).then((r) => [e.registration!.id, r] as const)))
@@ -211,6 +213,7 @@ function Wizard() {
   }
 
   const consentsReady = requiredConsentsGiven(live, consents);
+  const contactsReady = (contactCount ?? 0) > 0;
 
   async function next() {
     setError(null);
@@ -326,7 +329,8 @@ function Wizard() {
 
         {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} />}
         {step === 1 && <HealthStep entries={live} answers={health} setAnswer={answerHealth} errors={healthErrors} />}
-        {step === 2 && (
+        {step === 2 && <ContactsStep onChange={(list: EmergencyContact[]) => setContactCount(list.length)} />}
+        {step === 3 && (
           <PermissionsStep
             edition={edition}
             entries={live}
@@ -336,11 +340,14 @@ function Wizard() {
             setError={(id, m) => setConsentErrors((c) => (m ? { ...c, [id]: m } : Object.fromEntries(Object.entries(c).filter(([k]) => k !== id))))}
           />
         )}
-        {step === 3 && <ReviewStep edition={edition} entries={live} reviews={reviews} results={results} loading={reviewing && Object.keys(reviews).length === 0} onGoTo={goTo} />}
+        {step === 4 && <ReviewStep edition={edition} entries={live} reviews={reviews} results={results} loading={reviewing && Object.keys(reviews).length === 0} onGoTo={goTo} />}
 
         <FormError message={error} />
 
-        {step === 2 && !consentsReady && (
+        {step === 2 && !contactsReady && (
+          <p className="xs muted" id="contacts-hint" role="status">Add at least one emergency contact to continue.</p>
+        )}
+        {step === 3 && !consentsReady && (
           <p className="xs muted" id="consent-hint" role="status">Give the parent consent, confirm the pick-up notice and answer the photos and videos question for each child to continue.</p>
         )}
 
@@ -348,8 +355,8 @@ function Wizard() {
           {step > 0 ? <button type="button" className="btn btn-secondary" onClick={() => goTo((step - 1) as StepIndex)} disabled={busy}>Back</button> : <span />}
           <div className="row">
             {live.length > 0 && <button type="button" className="btn btn-ghost" onClick={saveAndExit} disabled={busy}>Save draft and exit</button>}
-            {step < 3 ? (
-              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 2 && !consentsReady)} aria-describedby={step === 2 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
+            {step < 4 ? (
+              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 2 && !contactsReady) || (step === 3 && !consentsReady)} aria-describedby={step === 2 && !contactsReady ? "contacts-hint" : step === 3 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={submit} disabled={busy || reviewing || !live.some((e) => reviews[e.registration!.id]?.canSubmit && !results[e.registration!.id]?.ok)}>
                 {busy ? "Submitting…" : "Submit registration"}

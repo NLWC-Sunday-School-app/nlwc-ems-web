@@ -28,8 +28,8 @@ export interface Entry {
   error?: string;
 }
 
-export const STEPS = ["Participants", "Health & care", "Permissions", "Review"] as const;
-export type StepIndex = 0 | 1 | 2 | 3;
+export const STEPS = ["Participants", "Health & care", "Emergency contacts", "Permissions", "Review"] as const;
+export type StepIndex = 0 | 1 | 2 | 3 | 4;
 
 export const isPhysical = (mode: ParticipationMode) => mode === "Day" || mode === "Camp";
 
@@ -87,8 +87,9 @@ export const CONDITIONS: { value: string; label: string }[] = [
 /** Where to send someone to fix an open task. */
 export function stepForTask(code: string): StepIndex {
   if (code === "health") return 1;
-  if (code.startsWith("consent_")) return 2;
-  return 3;
+  if (code === "emergency_contact") return 2;
+  if (code.startsWith("consent_")) return 3;
+  return 4;
 }
 
 /** What to call the account holder when they register dependants: "Parent", "Guardian" or "Parent / guardian"; "Adult" with none. */

@@ -15,9 +15,10 @@ describe("wizard model", () => {
   });
   it("sends each open task to the step that fixes it", () => {
     expect(stepForTask("health")).toBe(1);
-    expect(stepForTask("consent_media")).toBe(2);
-    expect(stepForTask("consent_terms")).toBe(2);
-    expect(stepForTask("something_else")).toBe(3);
+    expect(stepForTask("emergency_contact")).toBe(2);
+    expect(stepForTask("consent_media")).toBe(3);
+    expect(stepForTask("consent_terms")).toBe(3);
+    expect(stepForTask("something_else")).toBe(4);
   });
 });
 
