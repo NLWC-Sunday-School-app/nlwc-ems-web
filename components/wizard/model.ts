@@ -28,7 +28,7 @@ export interface Entry {
   error?: string;
 }
 
-export const STEPS = ["Participants", "Health & care", "Emergency contacts", "Permissions", "Review"] as const;
+export const STEPS = ["Participants", "Health & care", "Pick-up persons", "Permissions", "Review"] as const;
 export type StepIndex = 0 | 1 | 2 | 3 | 4;
 
 export const isPhysical = (mode: ParticipationMode) => mode === "Day" || mode === "Camp";

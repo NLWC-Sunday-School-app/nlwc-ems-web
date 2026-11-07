@@ -40,7 +40,7 @@ function ProfileScreen() {
     () => [
       { id: "pf-details", label: "My details" },
       { id: "pf-kids", label: "Dependants", badge: kids.data?.length ?? null },
-      { id: "pf-emergency", label: "Emergency contacts" },
+      { id: "pf-emergency", label: "Pick-up persons" },
     ],
     [kids.data?.length],
   );

@@ -12,7 +12,7 @@ export const MAX_EMERGENCY_CONTACTS = 5;
 const ICON = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
 /**
- * The family's emergency contacts: people to call about any of the children, not about one child in particular.
+ * The family's pick-up persons: people who may collect any of the children, not one child in particular.
  * Used on the profile page and in the registration wizard. `onChange` reports the list each time it loads or changes.
  */
 export function EmergencyContacts({ onChange, intro, heading = "h2" }: { onChange?: (contacts: EmergencyContact[]) => void; intro?: string; heading?: "h2" | "h3" }) {
@@ -46,18 +46,18 @@ export function EmergencyContacts({ onChange, intro, heading = "h2" }: { onChang
     <div className="card" id="pf-emergency">
       <div className="card-h">
         <div>
-          <Title>Family emergency contacts</Title>
-          <div className="xs muted">{intro ?? "People we can call about any of your children. They apply to your whole family."}</div>
+          <Title>Family pick-up persons</Title>
+          <div className="xs muted">{intro ?? "People allowed to collect your children, and who we can call about them. Add as many as you need; they apply to your whole family."}</div>
         </div>
-        {!adding && !full && <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setEditing(null); }}>+ Add contact</button>}
+        {!adding && !full && <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setEditing(null); }}>+ Add pick-up person</button>}
       </div>
 
       {adding && <ContactForm onDone={async () => { setAdding(false); await contacts.reload(); }} onCancel={() => setAdding(false)} />}
 
       <FormError message={error ?? contacts.error} />
       {contacts.loading && !contacts.data && <Loading />}
-      {contacts.data && list.length === 0 && !adding && <p className="muted sm">No emergency contacts yet. Add at least one to register.</p>}
-      {full && <p className="xs muted">A family can name up to {MAX_EMERGENCY_CONTACTS} contacts. Remove one to add another.</p>}
+      {contacts.data && list.length === 0 && !adding && <p className="muted sm">No pick-up persons yet. Add at least one to register.</p>}
+      {full && <p className="xs muted">A family can name up to {MAX_EMERGENCY_CONTACTS} pick-up persons. Remove one to add another.</p>}
 
       <div className="stack-4">
         {list.map((c, i) => (
@@ -81,7 +81,7 @@ export function EmergencyContacts({ onChange, intro, heading = "h2" }: { onChang
               {editing === c.id && <ContactForm contact={c} onDone={async () => { setEditing(null); await contacts.reload(); }} onCancel={() => setEditing(null)} />}
               {removing === c.id && (
                 <div className="stack-4">
-                  <p className="sm muted">Remove {c.fullName} from your family's emergency contacts?{list.length === 1 && " You'll need to add another before you can register."}</p>
+                  <p className="sm muted">Remove {c.fullName} from your family's pick-up persons?{list.length === 1 && " You'll need to add another before you can register."}</p>
                   <div className="row">
                     <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(c)}>Remove {c.fullName}</button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRemoving(null)}>Keep</button>
@@ -118,7 +118,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: EmergencyContact
 
   return (
     <form className="card stack-4" onSubmit={submit} style={{ background: "var(--surface-sunken)", boxShadow: "none", marginBottom: "var(--space-4)" }}>
-      <h3>{contact ? `Edit ${contact.fullName}` : "Add an emergency contact"}</h3>
+      <h3>{contact ? `Edit ${contact.fullName}` : "Add a pick-up person"}</h3>
       <FormError message={error} />
       <div className="grid g2">
         <TextField label="Full name" required maxLength={100} autoComplete="off" value={f.fullName} onChange={(e) => setF({ ...f, fullName: e.target.value })} />
@@ -126,7 +126,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: EmergencyContact
         <TextField label="Phone number" required type="tel" inputMode="tel" autoComplete="off" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
       </div>
       <div className="row">
-        <button className="btn btn-primary btn-sm" disabled={busy}>{busy ? "Saving…" : contact ? "Save changes" : "Save contact"}</button>
+        <button className="btn btn-primary btn-sm" disabled={busy}>{busy ? "Saving…" : contact ? "Save changes" : "Save pick-up person"}</button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
       </div>
     </form>

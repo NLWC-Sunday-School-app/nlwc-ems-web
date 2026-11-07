@@ -108,14 +108,14 @@ function Wizard() {
     const kids = await api.get<Dependant[]>("/dependant");
     const start = new Date(`${edition.startsOn}T00:00:00`);
     setEntries((es) => {
-      const known = new Set(es.map((e) => e.person.personId));
+      const known = new Set([...es.map((e) => e.person.personId), ...already.map((a) => a.person.personId)]);
       const fresh: Entry[] = kids.filter((k) => !known.has(k.personId)).map((k) => ({
         person: { personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, role: "Child", hasDob: !!k.dateOfBirth },
         selected: false, mode: "Day" as ParticipationMode, studio: false,
       }));
       return [...es, ...fresh];
     });
-  }, [edition]);
+  }, [edition, already]);
 
   const chosen = useMemo(() => entries.filter((e) => e.selected), [entries]);
   const live = useMemo(() => active(entries), [entries]);
@@ -345,7 +345,7 @@ function Wizard() {
         <FormError message={error} />
 
         {step === 2 && !contactsReady && (
-          <p className="xs muted" id="contacts-hint" role="status">Add at least one emergency contact to continue.</p>
+          <p className="xs muted" id="contacts-hint" role="status">Add at least one pick-up person to continue. You can add several.</p>
         )}
         {step === 3 && !consentsReady && (
           <p className="xs muted" id="consent-hint" role="status">Give the parent consent, confirm the pick-up notice and answer the photos and videos question for each child to continue.</p>

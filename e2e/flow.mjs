@@ -97,7 +97,7 @@ await page.getByLabel("Full name").fill("Ngozi Egwu");
 await page.getByLabel("Relationship").fill("Wife");
 await page.getByLabel("Phone").fill("08051231180");
 await page.getByRole("button", { name: /Save contact/ }).click();
-await page.getByText("Emergency contact saved").waitFor();
+await page.getByText("Pick-up person saved").waitFor();
 check(true, "own emergency contact saved");
 await shot("02-profile");
 
@@ -184,7 +184,7 @@ await page.locator("section", { hasText: "Tobi Egwu" }).getByLabel("Full name").
 await page.locator("section", { hasText: "Tobi Egwu" }).getByLabel("Relationship").last().fill("Mother");
 await page.locator("section", { hasText: "Tobi Egwu" }).getByLabel("Phone").last().fill("08051231180");
 await page.locator("section", { hasText: "Tobi Egwu" }).getByRole("button", { name: /Save contact/ }).click();
-await page.getByText("Emergency contact saved").first().waitFor();
+await page.getByText("Pick-up person saved").first().waitFor();
 await shot("06-wizard-pickup");
 await page.getByRole("button", { name: "Continue" }).click();
 
@@ -220,17 +220,17 @@ check(!(await page.getByRole("button", { name: "Submit registration" }).isDisabl
 await shot("10-wizard-review");
 
 // Chidi has no emergency contact yet: the API says so and the review points at the fix
-check(body.includes("Add an emergency contact"), "review lists Chidi's missing emergency contact from the API");
+check(body.includes("Add a pick-up person"), "review lists Chidi's missing emergency contact from the API");
 
 // save and exit, see the drafts on the dashboard, resume at the review step
 await page.getByRole("button", { name: "Save draft and exit" }).click();
 await page.waitForURL("**/dashboard");
 await page.getByText("Tobi Egwu").first().waitFor();
-await page.getByText("Add an emergency contact").first().waitFor();
+await page.getByText("Add a pick-up person").first().waitFor();
 body = await text("main");
 check(body.includes("Hello, Kelechi") && body.includes("Draft"), "dashboard shows the drafts");
 check(body.includes("Answer the photo and video permission"), "dashboard lists the optional media task");
-check(body.includes("Add an emergency contact"), "dashboard lists Chidi's blocking task");
+check(body.includes("Add a pick-up person"), "dashboard lists Chidi's blocking task");
 await shot("11-dashboard-drafts");
 await page.getByRole("link", { name: "Finish" }).first().click();
 await page.waitForURL("**/register");
@@ -245,7 +245,7 @@ await chidi.getByLabel("Full name").last().fill("Ngozi Egwu");
 await chidi.getByLabel("Relationship").last().fill("Mother");
 await chidi.getByLabel("Phone").last().fill("08051231180");
 await chidi.getByRole("button", { name: /Save contact/ }).click();
-await page.getByText("Emergency contact saved").first().waitFor();
+await page.getByText("Pick-up person saved").first().waitFor();
 await page.getByRole("button", { name: "Continue" }).click();
 await page.getByRole("heading", { name: "Permissions", level: 3 }).waitFor();
 await page.waitForFunction(() => document.querySelectorAll('.ph-row input[value="yes"]:checked').length >= 7, null, { timeout: 8000 }).catch(() => {});
