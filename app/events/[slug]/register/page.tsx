@@ -15,7 +15,7 @@ import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Dependant, EmergencyContact, ParticipationMode, Profile, PublicEdition, Registration, Review } from "@/lib/types";
+import type { Dependant, EmergencyContact, ParticipationMode, Profile, PublicEdition, Registration, Review, SubmitOutcome } from "@/lib/types";
 
 export default function RegisterPage() {
   return (
@@ -120,7 +120,7 @@ function Wizard() {
   const chosen = useMemo(() => entries.filter((e) => e.selected), [entries]);
   const live = useMemo(() => active(entries), [entries]);
 
-  const HEALTH_MESSAGE = "Please finish the health answers marked below.";
+  const HEALTH_MESSAGE = "Some health questions still need an answer. They are marked in red above.";
   /** Records a health answer and clears that person's warning as soon as they change it; the form-level warning goes once none are left. */
   const answerHealth = useCallback((id: string, patch: Partial<HealthAnswer>) => {
     setHealth((h) => ({ ...h, [id]: { ...(h[id] ?? emptyHealth()), ...patch } }));
@@ -251,14 +251,15 @@ function Wizard() {
     setBusy(true);
     setError(null);
     const out: Record<string, SubmitResult> = { ...results };
-    for (const e of live) {
-      const id = e.registration!.id;
-      if (out[id]?.ok || !reviews[id]?.canSubmit) continue;
+    // All together in one call, so the family gets one confirmation email that lists every child, not one email per child.
+    const ids = live.map((e) => e.registration!.id).filter((id) => !out[id]?.ok && reviews[id]?.canSubmit);
+    if (ids.length > 0) {
       try {
-        const r = await api.post<Review>(`/registration/${id}/submit`);
-        out[id] = { ok: true, state: r.state };
+        const outcomes = await api.post<SubmitOutcome[]>("/registration/submit", { registrationIds: ids });
+        for (const o of outcomes)
+          out[o.registrationId] = o.ok ? { ok: true, state: o.state! } : { ok: false, message: friendlyError(new ApiError(400, o.code, o.message ?? "That didn't work. Please try again.")) };
       } catch (err) {
-        out[id] = { ok: false, message: friendlyError(err) };
+        for (const id of ids) out[id] = { ok: false, message: friendlyError(err) };
       }
     }
     setResults(out);

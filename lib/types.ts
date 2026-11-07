@@ -109,6 +109,8 @@ export interface Review { registrationId: string; state: RegistrationState; open
 export interface Health { none: boolean; conditions: string[]; allergies?: string | null; notes?: string | null }
 export interface HealthInput { none: boolean; conditions?: string[]; allergies?: string; notes?: string }
 export interface Consent { kind: ConsentKind; accepted: boolean; documentId: string; documentVersion: number; answeredAt: string }
+/** One registration's result from POST /registration/submit. */
+export interface SubmitOutcome { registrationId: string; ok: boolean; state?: RegistrationState | null; code: string | null; message?: string | null }
 export interface Created { id: string }
 
 /** A person the family named to call about any of its children. */

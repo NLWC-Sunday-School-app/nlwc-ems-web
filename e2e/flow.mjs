@@ -167,7 +167,7 @@ check(!(await text("main")).includes("Kelechi"), "online adult has no health ste
 await page.getByRole("button", { name: "Continue" }).click();
 await page.getByText("Answer Yes or No").first().waitFor();
 check(true, "health requires an answer");
-await page.getByRole("radio", { name: /^No Nothing to report/ }).check();
+for (const r of await page.getByRole("radio", { name: /^No Nothing to report/ }).all()) await r.check();
 await page.getByRole("button", { name: /Chidi/ }).click();
 await page.getByRole("radio", { name: /^Yes/ }).check();
 await page.getByRole("button", { name: "Continue" }).click();

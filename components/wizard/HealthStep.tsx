@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Avatar, FormError, Loading, TextAreaField } from "@/components/Form";
+import { useEffect, useRef } from "react";
+import { FormError, Loading, TextAreaField } from "@/components/Form";
 import { api } from "@/lib/api";
-import { initials } from "@/lib/format";
 import type { Health } from "@/lib/types";
 import { CONDITIONS, isPhysical, type Entry } from "./model";
 
@@ -40,7 +39,7 @@ export function HealthStep({
   errors: Record<string, string>;
 }) {
   const physical = entries.filter((e) => e.registration && isPhysical(e.registration.participationMode));
-  const [current, setCurrent] = useState(physical[0]?.person.personId);
+  const cards = useRef<Record<string, HTMLElement | null>>({});
 
   // Load what was already saved (resuming a draft).
   useEffect(() => {
@@ -57,6 +56,17 @@ export function HealthStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [physical.map((e) => e.registration!.id).join()]);
 
+  // After Continue finds gaps, take the person straight to the first card that still needs an answer.
+  const errorKey = Object.keys(errors).join();
+  useEffect(() => {
+    const first = physical.find((e) => errors[e.registration!.id]);
+    const el = first && cards.current[first.registration!.id];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorKey]);
+
   if (physical.length === 0)
     return (
       <div className="card stack-4">
@@ -67,82 +77,98 @@ export function HealthStep({
 
   const done = (e: Entry) => toHealthInput(answers[e.registration!.id] ?? emptyHealth()).ok;
   const doneCount = physical.filter(done).length;
-  const selected = physical.find((e) => e.person.personId === current) ?? physical[0];
-  const reg = selected.registration!;
-  const a = answers[reg.id] ?? emptyHealth();
-  const err = errors[reg.id];
+  const many = physical.length > 1;
 
   return (
     <div className="stack-4 hc">
       <div>
         <h3>Health and care</h3>
-        <p className="sm muted" style={{ marginTop: 4 }}>Please answer for each person attending in person so our team can look after them well. It takes about a minute each.</p>
+        <p className="sm muted" style={{ marginTop: 4 }}>
+          {many
+            ? `There is one question for each of the ${physical.length} people below. Tap Yes or No for each one to continue.`
+            : "There is one question below. Tap Yes or No to continue."}
+        </p>
       </div>
       <div className="alert info hc-private">
         <span aria-hidden="true">🔒</span>
         <div><b>Private and restricted.</b>Only our welfare and medical team can see this. It never appears in the general list.</div>
       </div>
 
-      <div className="row" role="group" aria-label="Choose a person" style={{ flexWrap: "wrap" }}>
-        {physical.map((e) => (
-          <button
-            type="button"
-            key={e.person.personId}
-            className="hc-tab"
-            aria-pressed={e.person.personId === selected.person.personId}
-            onClick={() => setCurrent(e.person.personId)}
+      {many && (
+        <div className="hc-progress" aria-live="polite">
+          <div className="row between"><b className="sm">{doneCount} of {physical.length} answered</b>{doneCount === physical.length && <span className="xs hc-all">✓ All done</span>}</div>
+          <div className="hc-bar" aria-hidden="true"><span style={{ width: `${(doneCount / physical.length) * 100}%` }} /></div>
+        </div>
+      )}
+
+      {physical.map((e, i) => {
+        const reg = e.registration!;
+        const a = answers[reg.id] ?? emptyHealth();
+        const err = errors[reg.id];
+        const ok = done(e);
+        const name = e.person.given;
+        return (
+          <section
+            key={reg.id}
+            ref={(el) => { cards.current[reg.id] = el; }}
+            tabIndex={-1}
+            className={`card stack-4 hc-card${ok ? " done" : ""}${err ? " bad" : ""}`}
+            aria-label={`Health and care for ${name}`}
           >
-            <Avatar>{initials(e.person.given)}</Avatar>
-            <span><b>{e.person.given}</b><span className={`hc-status ${done(e) ? "done" : ""}`}>{done(e) ? "✓ Done" : "To do"}</span></span>
-          </button>
-        ))}
-        <span className="hc-count xs muted">{doneCount} of {physical.length} done</span>
-      </div>
-
-      <section className="card stack-4" aria-label={`Health and care for ${selected.person.given}`}>
-        <div><h3>{selected.person.given}</h3>{selected.person.age != null && <div className="xs muted">{selected.person.age} years old</div>}</div>
-        {!a.loaded ? <Loading /> : (
-          <>
-            <fieldset className="hc-q" style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend className="lbl">Does {selected.person.given} have any allergy or health condition we should know about?</legend>
-              <div className="hc-yn">
-                <label className="mp-opt"><input type="radio" name={`yn-${reg.id}`} checked={a.hasIssue === false} onChange={() => setAnswer(reg.id, { hasIssue: false, conditions: [] })} /><div><b>No</b><span>Nothing to report</span></div></label>
-                <label className="mp-opt"><input type="radio" name={`yn-${reg.id}`} checked={a.hasIssue === true} onChange={() => setAnswer(reg.id, { hasIssue: true })} /><div><b>Yes</b><span>I'll tell you more</span></div></label>
+            <div className="hc-card-h">
+              <span className="hc-n" aria-hidden="true">{ok ? "✓" : i + 1}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <b>{name} {e.person.family}</b>
+                {e.person.age != null && <div className="xs muted">{e.person.age === 1 ? "1 year old" : `${e.person.age} years old`}</div>}
               </div>
-            </fieldset>
+              <span className={`hc-pill ${ok ? "ok" : "todo"}`}>{ok ? "Answered" : "Needs an answer"}</span>
+            </div>
 
-            {a.hasIssue && (
-              <div className="stack-4">
+            {!a.loaded ? <Loading /> : (
+              <>
                 <fieldset className="hc-q" style={{ border: 0, padding: 0, margin: 0 }}>
-                  <legend className="lbl">Which of these apply? <span className="muted">(choose all that apply)</span></legend>
-                  <div className="chip-checks">
-                    {CONDITIONS.map((c) => (
-                      <label className="chip-check" key={c.value}>
-                        <input
-                          type="checkbox"
-                          checked={a.conditions.includes(c.value)}
-                          onChange={(ev) => setAnswer(reg.id, { conditions: ev.target.checked ? [...a.conditions, c.value] : a.conditions.filter((x) => x !== c.value) })}
-                        />
-                        <span>{c.label}</span>
-                      </label>
-                    ))}
+                  <legend className="hc-question">Does {name} have any allergy or health condition we should know about?</legend>
+                  <p className="xs muted" style={{ margin: "4px 0 var(--space-3)" }}>Tap one answer.</p>
+                  <div className="hc-yn">
+                    <label className="mp-opt hc-choice"><input type="radio" name={`yn-${reg.id}`} checked={a.hasIssue === false} onChange={() => setAnswer(reg.id, { hasIssue: false, conditions: [] })} /><div><b>No</b><span>Nothing to report</span></div></label>
+                    <label className="mp-opt hc-choice"><input type="radio" name={`yn-${reg.id}`} checked={a.hasIssue === true} onChange={() => setAnswer(reg.id, { hasIssue: true })} /><div><b>Yes</b><span>I'll tell you more</span></div></label>
                   </div>
                 </fieldset>
-                <TextAreaField label="Allergies" maxLength={1000} placeholder="Foods, medicines, stings…" value={a.allergies} onChange={(ev) => setAnswer(reg.id, { allergies: ev.target.value })} />
-                <TextAreaField
-                  label="Anything else we should know, and what to do"
-                  required={a.conditions.includes("other")}
-                  maxLength={1000}
-                  placeholder="Tell us what to look out for and what to do"
-                  value={a.notes}
-                  onChange={(ev) => setAnswer(reg.id, { notes: ev.target.value })}
-                />
-              </div>
+
+                {a.hasIssue && (
+                  <div className="stack-4">
+                    <fieldset className="hc-q" style={{ border: 0, padding: 0, margin: 0 }}>
+                      <legend className="lbl">Which of these apply? <span className="muted">(choose all that apply)</span></legend>
+                      <div className="chip-checks">
+                        {CONDITIONS.map((c) => (
+                          <label className="chip-check" key={c.value}>
+                            <input
+                              type="checkbox"
+                              checked={a.conditions.includes(c.value)}
+                              onChange={(ev) => setAnswer(reg.id, { conditions: ev.target.checked ? [...a.conditions, c.value] : a.conditions.filter((x) => x !== c.value) })}
+                            />
+                            <span>{c.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <TextAreaField label="Allergies" maxLength={1000} placeholder="Foods, medicines, stings…" value={a.allergies} onChange={(ev) => setAnswer(reg.id, { allergies: ev.target.value })} />
+                    <TextAreaField
+                      label="Anything else we should know, and what to do"
+                      required={a.conditions.includes("other")}
+                      maxLength={1000}
+                      placeholder="Tell us what to look out for and what to do"
+                      value={a.notes}
+                      onChange={(ev) => setAnswer(reg.id, { notes: ev.target.value })}
+                    />
+                  </div>
+                )}
+                <FormError message={err} />
+              </>
             )}
-            <FormError message={err} />
-          </>
-        )}
-      </section>
+          </section>
+        );
+      })}
     </div>
   );
 }
