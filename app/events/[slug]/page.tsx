@@ -110,7 +110,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
 
             <section className={`ev-sec${content?.studio ? " ev-two" : ""}`}>
               <div>
-                <h2>Before you register</h2>
+                <h2>Details needed before you register</h2>
                 <ul className="ev-list">
                   <li>Each child's date of birth</li>
                   <li>Names and phone numbers of adults who may pick them up</li>
