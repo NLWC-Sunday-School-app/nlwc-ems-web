@@ -6,7 +6,12 @@ const REVALIDATE = { next: { revalidate: 30 } } as RequestInit;
 
 export const listEditions = () => api.get<PublicEdition[]>("/public/edition", REVALIDATE);
 export type ComingSoon = { code: string; name: string };
-export const listComingSoon = () => api.get<ComingSoon[]>("/public/coming-soon", REVALIDATE);
+
+/** Programmes that are not announced yet stay off the portal. Remove an entry here to show its "coming soon" card again. */
+const HIDDEN_COMING_SOON: ReadonlySet<string | undefined> = new Set(["couples"]);
+
+export const visibleComingSoon = (list: ComingSoon[]): ComingSoon[] => list.filter((c) => !HIDDEN_COMING_SOON.has(eventKey(c.code)));
+export const listComingSoon = async () => visibleComingSoon(await api.get<ComingSoon[]>("/public/coming-soon", REVALIDATE));
 
 /** The accent key the shared CSS styles events by (left border, tint). The edition code starts with the programme code. */
 export function eventKey(code: string): "bootcamp" | "singlz" | "couples" | undefined {

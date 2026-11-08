@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAllowed, campAges, campAllows, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge } from "./editions";
+import { ageAllowed, campAges, campAllows, dateRangeParts, daysUntil, eventKey, featuredEdition, isOpen, modesOf, pickupText, priceLabel, statusBadge, visibleComingSoon } from "./editions";
 import type { PublicEdition } from "./types";
 
 const edition = (over: Partial<PublicEdition> = {}): PublicEdition => ({
@@ -54,6 +54,10 @@ describe("events page helpers", () => {
     expect(eventKey("ss27")).toBe("singlz");
     expect(eventKey("CP26")).toBe("couples");
     expect(eventKey("XX26")).toBeUndefined();
+  });
+  it("keeps the Couples retreat off the coming-soon list until it is announced", () => {
+    const soon = [{ code: "CP", name: "Couples Retreat" }, { code: "SS", name: "Singlz Summit" }];
+    expect(visibleComingSoon(soon).map((c) => c.code)).toEqual(["SS"]);
   });
   it("features the soonest open edition, else the soonest upcoming", () => {
     const open = edition({ slug: "open", startsOn: "2027-03-01", registrationWindow: "Open" });
