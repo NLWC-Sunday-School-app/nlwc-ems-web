@@ -15,7 +15,7 @@ import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Dependant, EmergencyContact, ParticipationMode, Profile, PublicEdition, Registration, Review, SubmitOutcome } from "@/lib/types";
+import type { Dependant, ParticipationMode, Profile, PublicEdition, Registration, Review, SubmitOutcome } from "@/lib/types";
 
 export default function RegisterPage() {
   return (
@@ -44,7 +44,6 @@ function Wizard() {
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
   const [consents, setConsents] = useState<ConsentAnswers>({});
   const [consentErrors, setConsentErrors] = useState<Record<string, string>>({});
-  const [contactCount, setContactCount] = useState<number | null>(null);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [reviewing, setReviewing] = useState(false);
   const [results, setResults] = useState<Record<string, SubmitResult>>({});
@@ -213,7 +212,6 @@ function Wizard() {
   }
 
   const consentsReady = requiredConsentsGiven(live, consents);
-  const contactsReady = (contactCount ?? 0) > 0;
 
   async function next() {
     setError(null);
@@ -330,7 +328,7 @@ function Wizard() {
 
         {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} />}
         {step === 1 && <HealthStep entries={live} answers={health} setAnswer={answerHealth} errors={healthErrors} />}
-        {step === 2 && <ContactsStep onChange={(list: EmergencyContact[]) => setContactCount(list.length)} />}
+        {step === 2 && <ContactsStep />}
         {step === 3 && (
           <PermissionsStep
             edition={edition}
@@ -345,9 +343,6 @@ function Wizard() {
 
         <FormError message={error} />
 
-        {step === 2 && !contactsReady && (
-          <p className="xs muted" id="contacts-hint" role="status">Add at least one pick-up person to continue. You can add several.</p>
-        )}
         {step === 3 && !consentsReady && (
           <p className="xs muted" id="consent-hint" role="status">Give the parent consent, confirm the pick-up notice and answer the photos and videos question for each child to continue.</p>
         )}
@@ -357,7 +352,7 @@ function Wizard() {
           <div className="row">
             {live.length > 0 && <button type="button" className="btn btn-ghost" onClick={saveAndExit} disabled={busy}>Save draft and exit</button>}
             {step < 4 ? (
-              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 2 && !contactsReady) || (step === 3 && !consentsReady)} aria-describedby={step === 2 && !contactsReady ? "contacts-hint" : step === 3 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
+              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 3 && !consentsReady)} aria-describedby={step === 3 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={submit} disabled={busy || reviewing || !live.some((e) => reviews[e.registration!.id]?.canSubmit && !results[e.registration!.id]?.ok)}>
                 {busy ? "Submitting…" : "Submit registration"}

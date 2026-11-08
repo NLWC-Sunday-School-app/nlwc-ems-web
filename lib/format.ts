@@ -98,7 +98,6 @@ export function priceLine(state: PriceState): PriceLine {
 
 /** Open tasks shown to a family, from the API's stable task codes. */
 export const TASK_LABEL: Record<string, string> = {
-  emergency_contact: "Add a pick-up person",
   health: "Answer the health questions",
   consent_terms: "Accept the event terms",
   consent_guardian_authorization: "Give parent or guardian consent",

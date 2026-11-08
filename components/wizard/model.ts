@@ -65,7 +65,7 @@ export const CONSENT_TEXT: Record<ConsentKind, string> = {
   GuardianAuthorization:
     "As the parent or legal guardian, I give my consent for my child to take part in this event, and I confirm they are fit to take part in the activities.",
   MedicalEmergency: "In an emergency, I authorise the event team to seek first-aid medical treatment for my child.",
-  Media: "I consent to pictures and videos of my child being used in the publicity for this event. Saying no never stops registration.",
+  Media: "I consent to clear, individual pictures and videos of my child being used for event publicity. Saying no never stops registration. Saying no means no solo photos, but my child may still appear in group photos.",
 };
 
 export const CONDITIONS: { value: string; label: string }[] = [
@@ -87,7 +87,6 @@ export const CONDITIONS: { value: string; label: string }[] = [
 /** Where to send someone to fix an open task. */
 export function stepForTask(code: string): StepIndex {
   if (code === "health") return 1;
-  if (code === "emergency_contact") return 2;
   if (code.startsWith("consent_")) return 3;
   return 4;
 }

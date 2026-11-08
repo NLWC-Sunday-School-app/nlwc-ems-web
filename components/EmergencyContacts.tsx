@@ -56,7 +56,7 @@ export function EmergencyContacts({ onChange, intro, heading = "h2" }: { onChang
 
       <FormError message={error ?? contacts.error} />
       {contacts.loading && !contacts.data && <Loading />}
-      {contacts.data && list.length === 0 && !adding && <p className="muted sm">No pick-up persons yet. Add at least one to register.</p>}
+      {contacts.data && list.length === 0 && !adding && <p className="muted sm">No pick-up persons yet. This is optional, and you can add some any time.</p>}
       {full && <p className="xs muted">A family can name up to {MAX_EMERGENCY_CONTACTS} pick-up persons. Remove one to add another.</p>}
 
       <div className="stack-4">

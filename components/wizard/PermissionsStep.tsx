@@ -184,7 +184,7 @@ export function PermissionsStep({
             <div>
               <h3 id="perm-photos">Photos and videos</h3>
               <span className="xs muted">
-                As a parent or guardian, do you consent to the use of pictures and videos of your {kids.length === 1 ? "child" : "child or children"} in the photo and video publicity of the event? Saying no never stops registration.
+                As a parent or guardian, do you consent to the use of clear, individual pictures and videos of your {kids.length === 1 ? "child" : "child or children"} for event publicity? Saying no never stops registration. Saying no means no solo photos, but your child may still appear in group photos.
               </span>
             </div>
             <span className="perm-ok">{TICK} Done</span>
