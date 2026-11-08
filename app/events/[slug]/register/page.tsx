@@ -48,6 +48,7 @@ function Wizard() {
   const [reviewing, setReviewing] = useState(false);
   const [results, setResults] = useState<Record<string, SubmitResult>>({});
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const wizardRef = useRef<HTMLDivElement>(null);
 
   // ---- load ----
   useEffect(() => {
@@ -146,7 +147,12 @@ function Wizard() {
   function goTo(s: StepIndex) {
     setError(null);
     setStep(s);
-    setTimeout(() => headingRef.current?.focus(), 0);
+    // Show the top of the wizard (title and progress), not wherever the previous step was scrolled to. The heading is focused for screen readers
+    // without scrolling: it is visually hidden below the stepper, so letting focus() scroll would land the page beneath the title.
+    setTimeout(() => {
+      wizardRef.current?.scrollIntoView({ block: "start" });
+      headingRef.current?.focus({ preventScroll: true });
+    }, 0);
   }
 
   // Reviews are loaded fresh each time the review step opens.
@@ -300,7 +306,7 @@ function Wizard() {
 
   return (
     <div className="container page-pad">
-      <div className="narrow stack-6" data-wiz data-event={edition.code.toLowerCase()}>
+      <div className="narrow stack-6" data-wiz data-event={edition.code.toLowerCase()} ref={wizardRef} style={{ scrollMarginTop: 16 }}>
         <div>
           <span className="badge b-event">{edition.name}</span>
           <h1 style={{ marginTop: 8 }}>Register</h1>
