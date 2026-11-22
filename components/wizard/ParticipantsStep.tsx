@@ -6,7 +6,7 @@ import { AddDependantForm } from "@/components/Dependants";
 import { Avatar } from "@/components/Form";
 import { MODE_LABEL, initials } from "@/lib/format";
 import type { ParticipationMode, PublicEdition } from "@/lib/types";
-import { ageAllowed, campAges, campAllows, modesOf } from "@/lib/editions";
+import { MIN_REGISTRATION_AGE, ageAllowed, campAges, campAllows, modesOf } from "@/lib/editions";
 import type { Entry } from "./model";
 
 export function ParticipantsStep({
@@ -57,7 +57,8 @@ export function ParticipantsStep({
         const locked = !!reg; // the way of taking part is fixed once a registration exists
         const group = `mode-${p.personId}`;
         const tooOld = p.hasDob && !ageAllowed(edition, p.ageAtEvent);
-        const tooYoung = tooOld && edition.minAge != null && p.ageAtEvent != null && p.ageAtEvent < edition.minAge;
+        const minAge = Math.max(edition.minAge ?? 0, MIN_REGISTRATION_AGE);
+        const tooYoung = tooOld && p.ageAtEvent != null && p.ageAtEvent < minAge;
         const noDob = !reg && !p.hasDob;   // eligibility depends on age, so nobody can be ticked without a date of birth
         return (
           <div className="card mp stack-4" key={p.personId}>
@@ -71,7 +72,7 @@ export function ParticipantsStep({
             </label>
 
             {tooOld && (
-              <p className="sm muted" role="note">{edition.name} is for people {tooYoung ? `aged ${edition.minAge} and over` : `up to ${edition.maxAge} years old`}{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
+              <p className="sm muted" role="note">{edition.name} is for people {tooYoung ? `aged ${minAge} and over` : `up to ${edition.maxAge} years old`}{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
             )}
 
             {noDob && (

@@ -60,8 +60,11 @@ export const campAges = (e: PublicEdition): string | null =>
   e.camp && (e.camp.minAge != null || e.camp.maxAge != null) ? `${e.camp.minAge ?? 0}${e.camp.maxAge != null ? `–${e.camp.maxAge}` : "+"}` : null;
 
 /** Whether someone of this age (on the day the event starts) is old enough to take part at all. Unknown age passes: the API decides. */
+/** Children younger than this can't be registered for any event. Keep in step with RegistrationRules.MinRegistrationAge in the API. */
+export const MIN_REGISTRATION_AGE = 3;
+
 export function ageAllowed(e: PublicEdition, age: number | null): boolean {
-  return age == null || ((e.maxAge == null || age <= e.maxAge) && (e.minAge == null || age >= e.minAge));
+  return age == null || (age >= Math.max(e.minAge ?? 0, MIN_REGISTRATION_AGE) && (e.maxAge == null || age <= e.maxAge));
 }
 
 /** Whether someone of this age (on the day the event starts) may ask for camp. Unknown age passes: the API decides. */
