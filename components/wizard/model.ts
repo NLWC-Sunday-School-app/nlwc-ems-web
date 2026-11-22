@@ -71,12 +71,12 @@ export function nearestStep(steps: StepKey[], wanted: StepKey): StepKey {
 /** Whether children can take part at all: an event whose youngest age is 18 or more is for adults only. */
 export const childrenWelcome = (e: PublicEdition): boolean => e.minAge == null || e.minAge < 18;
 
-/** Whether the account holder can register themself. Under 18 they can't (a guardian must), and their age must fit the event.
+/** Whether the account holder can register themself: any age that fits the event, teen or adult.
  * "unknown" means there is no date of birth to tell. Someone who already has a registration here always counts as eligible. */
 export function selfEligibility(e: PublicEdition, self: Person, hasRegistration = false): "eligible" | "ineligible" | "unknown" {
   if (hasRegistration) return "eligible";
   if (!self.hasDob || self.ageAtEvent == null) return "unknown";
-  return self.ageAtEvent >= 18 && ageAllowed(e, self.ageAtEvent) ? "eligible" : "ineligible";
+  return ageAllowed(e, self.ageAtEvent) ? "eligible" : "ineligible";
 }
 
 /** Whether this row can be ticked right now. */

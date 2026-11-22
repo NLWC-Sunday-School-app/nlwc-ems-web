@@ -79,8 +79,9 @@ describe("selfEligibility", () => {
     expect(selfEligibility(bootcamp, me({ age: 19, ageAtEvent: 19 }))).toBe("eligible");
     expect(selfEligibility(adultsOnly, me())).toBe("eligible");
   });
-  it("never lets someone under 18 register themself", () => {
-    expect(selfEligibility(bootcamp, me({ age: 16, ageAtEvent: 16 }))).toBe("ineligible");
+  it("lets a teenager within the ages register themself", () => {
+    expect(selfEligibility(bootcamp, me({ age: 15, ageAtEvent: 15 }))).toBe("eligible");
+    expect(selfEligibility(bootcamp, me({ age: 2, ageAtEvent: 2 }))).toBe("ineligible");
   });
   it("always shows someone who already has a registration", () => {
     expect(selfEligibility(bootcamp, me(), true)).toBe("eligible");
