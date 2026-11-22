@@ -77,9 +77,9 @@ export function PasswordField({ label, hint, error, required, ...input }: FieldS
   );
 }
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const pad = (v: string, n: number) => v.padStart(n, "0");
 
-/** Day / month / year dropdowns for dates of birth: pick instead of type, and unambiguous on any locale. */
+/** Date-of-birth entry using the browser's native date picker (a calendar on phones and desktops). */
 export function DateParts({
   label,
   hint,
@@ -88,43 +88,24 @@ export function DateParts({
   onChange,
   required,
   disabled,
-}: FieldShell & { value: { d: string; m: string; y: string }; onChange: (v: { d: string; m: string; y: string }) => void; disabled?: boolean }) {
+  min,
+  max,
+}: FieldShell & { value: { d: string; m: string; y: string }; onChange: (v: { d: string; m: string; y: string }) => void; disabled?: boolean; min?: string; max?: string }) {
   const id = useId();
-  const thisYear = new Date().getFullYear();
-  const years = Array.from({ length: thisYear - 1899 }, (_, i) => String(thisYear - i));
-  // Stored values may be zero-padded ("05"); the options are not.
-  const norm = (v: string) => (v ? String(Number(v)) : "");
-  const y = value.y;
-  const m = norm(value.m);
-  const d = norm(value.d);
-  const daysIn = m && y.length === 4 ? new Date(Number(y), Number(m), 0).getDate() : m ? new Date(2024, Number(m), 0).getDate() : 31;
-  const change = (k: "d" | "m" | "y") => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const next = { d, m, y, [k]: e.target.value };
-    const max = next.m ? new Date(next.y.length === 4 ? Number(next.y) : 2024, Number(next.m), 0).getDate() : 31;
-    if (next.d && Number(next.d) > max) next.d = String(max);
-    onChange(next);
+  const iso = value.d && value.m && value.y.length === 4 ? `${value.y}-${pad(value.m, 2)}-${pad(value.d, 2)}` : "";
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${pad(String(today.getMonth() + 1), 2)}-${pad(String(today.getDate()), 2)}`;
+  const change = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [y, m, d] = e.target.value.split("-");
+    onChange(y && m && d ? { d: String(Number(d)), m: String(Number(m)), y } : { d: "", m: "", y: "" });
   };
-  const invalid = error ? true : undefined;
   return (
     <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }} aria-describedby={describedBy(id, hint, error)} disabled={disabled}>
       <legend className="lbl">
         {label}
         {required && <span className="req" aria-hidden="true"> *</span>}
       </legend>
-      <div className="row" style={{ gap: "var(--space-2)", flexWrap: "wrap" }}>
-        <select className="input" aria-label="Day" style={{ width: 84 }} value={d} onChange={change("d")} aria-invalid={invalid}>
-          <option value="">Day</option>
-          {Array.from({ length: daysIn }, (_, i) => <option key={i + 1} value={String(i + 1)}>{i + 1}</option>)}
-        </select>
-        <select className="input" aria-label="Month" style={{ width: 140 }} value={m} onChange={change("m")} aria-invalid={invalid}>
-          <option value="">Month</option>
-          {MONTHS.map((name, i) => <option key={name} value={String(i + 1)}>{name}</option>)}
-        </select>
-        <select className="input" aria-label="Year" style={{ width: 104 }} value={y} onChange={change("y")} aria-invalid={invalid}>
-          <option value="">Year</option>
-          {years.map((yr) => <option key={yr} value={yr}>{yr}</option>)}
-        </select>
-      </div>
+      <input className="input" type="date" aria-label="Date of birth" style={{ maxWidth: 220 }} value={iso} min={min ?? "1900-01-01"} max={max ?? todayIso} onChange={change} required={required} aria-invalid={error ? true : undefined} />
       {hint && <span className="hint" id={`${id}-hint`}>{hint}</span>}
       {error && <span className="err" id={`${id}-err`}>{error}</span>}
     </fieldset>

@@ -60,7 +60,7 @@ function ProfileScreen() {
     if (!dobLocked && (dob.d || dob.m || dob.y)) {
       dateOfBirth = toIsoDate(dob.d, dob.m, dob.y);
       if (!dateOfBirth) {
-        setDobError("Enter a real date, choose the day, month and year.");
+        setDobError("Enter a real date, choose a date from the calendar.");
         return;
       }
     }
