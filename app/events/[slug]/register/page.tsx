@@ -10,7 +10,7 @@ import { PermissionsStep, type ConsentAnswers } from "@/components/wizard/Permis
 import { ContactsStep } from "@/components/wizard/ContactsStep";
 import { ParticipantsStep } from "@/components/wizard/ParticipantsStep";
 import { ReviewStep, type SubmitResult } from "@/components/wizard/ReviewStep";
-import { holderRole, requiredConsentsGiven, STEPS, active, isPhysical, type Entry, type Person, type StepIndex } from "@/components/wizard/model";
+import { ALL_STEPS, STEP_LABEL, active, canSelect, holderRole, isPhysical, joinNames, nearestStep, requiredConsentsGiven, stepFromDraft, stepsFor, type Entry, type Person, type StepKey } from "@/components/wizard/model";
 import { ApiError, api, friendlyError } from "@/lib/api";
 import { editionCodeOf } from "@/lib/editions";
 import { MODE_LABEL, ageOn } from "@/lib/format";
@@ -26,6 +26,13 @@ export default function RegisterPage() {
 }
 
 const EDITABLE = new Set(["Draft", "NeedsAction"]);
+
+/** A dependant as a row of the wizard. Ages are worked out today (for display) and on the day the event starts (for the hints). */
+const childPerson = (k: Dependant, start: Date): Person => ({
+  personId: k.personId, given: k.givenName, family: k.familyName,
+  age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null,
+  isSelf: false, isChild: true, role: "Child", hasDob: !!k.dateOfBirth, dependant: k,
+});
 const DEAD = new Set(["Cancelled", "Rejected", "Expired"]);
 
 function Wizard() {
@@ -36,7 +43,8 @@ function Wizard() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [already, setAlready] = useState<{ person: Person; reg: Registration }[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [step, setStep] = useState<StepIndex>(0);
+  const [profile, setProfile] = useState<Profile>();
+  const [step, setStep] = useState<StepKey>("participants");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -66,21 +74,21 @@ function Wizard() {
         const start = new Date(`${ed.startsOn}T00:00:00`);
         const people: Person[] = [
           { personId: profile.personId, given: profile.givenName, family: profile.familyName, age: profile.dateOfBirth ? ageOn(profile.dateOfBirth) : null, ageAtEvent: profile.dateOfBirth ? ageOn(profile.dateOfBirth, start) : null, isSelf: true, isChild: false, role: holderRole(kids.map((k) => k.relationship)), hasDob: !!profile.dateOfBirth },
-          ...kids.map((k) => ({ personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, role: "Child", hasDob: !!k.dateOfBirth })),
+          ...kids.map((k) => childPerson(k, start)),
         ];
         // Registrations for this edition: by id once the API returns it, else by the edition code at the start of the reference.
         const mine = regs.filter((r) => !DEAD.has(r.state) && (ed.id ? r.editionId === ed.id : editionCodeOf(r.reference) === ed.code));
 
         const next: Entry[] = [];
         const settled: { person: Person; reg: Registration }[] = [];
-        let resumeStep = 4;
+        let resumeAt = ALL_STEPS.length - 1;
         for (const person of people) {
           const reg = mine.find((r) => r.personId === person.personId);
           if (reg && !EDITABLE.has(reg.state)) {
             settled.push({ person, reg });
             continue;
           }
-          if (reg) resumeStep = Math.min(resumeStep, Math.max(0, Math.min(4, Number((reg.draft as { step?: number }).step ?? 0))));
+          if (reg) resumeAt = Math.min(resumeAt, ALL_STEPS.indexOf(stepFromDraft((reg.draft as { step?: unknown } | undefined)?.step)));
           next.push({
             person,
             selected: !!reg,
@@ -89,10 +97,15 @@ function Wizard() {
             registration: reg,
           });
         }
+        const resuming = next.some((e) => e.registration);
+        // Only one person can take part: tick them, so the family can go straight on.
+        const selectable = next.filter((e) => canSelect(ed, e));
+        if (!resuming && selectable.length === 1) selectable[0].selected = true;
         setEdition(ed);
+        setProfile(profile);
         setEntries(next);
         setAlready(settled);
-        setStep(next.some((e) => e.registration) ? (resumeStep as StepIndex) : 0);
+        setStep(resuming ? nearestStep(stepsFor(next.filter((e) => e.selected)), ALL_STEPS[resumeAt]) : "participants");
       } catch (e) {
         if (alive) setLoadError(e instanceof ApiError && e.status === 404 ? "We couldn't find this event." : friendlyError(e));
       }
@@ -102,23 +115,56 @@ function Wizard() {
     };
   }, [slug]);
 
-  /** After a dependant is added from the Participants step: fetch the list and append anyone new, leaving existing choices alone. */
+  /** After a dependant is added or edited from the Participants step: refresh everyone's details and append anyone new, leaving existing
+   * choices alone. A newly added child who can take part is ticked, since they were added to be registered. */
   const addedDependant = useCallback(async () => {
     if (!edition) return;
     const kids = await api.get<Dependant[]>("/dependant");
     const start = new Date(`${edition.startsOn}T00:00:00`);
     setEntries((es) => {
+      const byId = new Map(kids.map((k) => [k.personId, k]));
       const known = new Set([...es.map((e) => e.person.personId), ...already.map((a) => a.person.personId)]);
-      const fresh: Entry[] = kids.filter((k) => !known.has(k.personId)).map((k) => ({
-        person: { personId: k.personId, given: k.givenName, family: k.familyName, age: k.dateOfBirth ? ageOn(k.dateOfBirth) : null, ageAtEvent: k.dateOfBirth ? ageOn(k.dateOfBirth, start) : null, isSelf: false, isChild: true, role: "Child", hasDob: !!k.dateOfBirth },
-        selected: false, mode: "Day" as ParticipationMode, studio: false,
-      }));
-      return [...es, ...fresh];
+      const refreshed = es.map((e) => {
+        const k = byId.get(e.person.personId);
+        if (!k) return e;
+        const updated: Entry = { ...e, person: childPerson(k, start) };
+        // A date of birth was just added: tick them if it lets them take part.
+        return !e.person.hasDob && updated.person.hasDob ? { ...updated, selected: canSelect(edition, updated) } : updated;
+      });
+      const fresh: Entry[] = kids.filter((k) => !known.has(k.personId)).map((k) => {
+        const entry: Entry = { person: childPerson(k, start), selected: false, mode: "Day" as ParticipationMode, studio: false };
+        return { ...entry, selected: canSelect(edition, entry) };
+      });
+      return [...refreshed, ...fresh];
     });
   }, [edition, already]);
 
+  /** Sets the account holder's own date of birth (once only), then ticks them if that makes them eligible. Returns an error to show, or null. */
+  const saveSelfDob = useCallback(async (iso: string): Promise<string | null> => {
+    if (!profile || !edition) return "Please reload the page and try again.";
+    try {
+      await api.put("/profile", {
+        givenName: profile.givenName, familyName: profile.familyName, middleName: profile.middleName ?? null,
+        gender: profile.gender ?? null, maritalStatus: profile.maritalStatus ?? null, country: profile.country ?? null, city: profile.city ?? null,
+        dateOfBirth: iso,
+      });
+    } catch (err) {
+      return friendlyError(err);
+    }
+    setProfile({ ...profile, dateOfBirth: iso });
+    const start = new Date(`${edition.startsOn}T00:00:00`);
+    setEntries((es) => es.map((e) => {
+      if (!e.person.isSelf) return e;
+      const updated: Entry = { ...e, person: { ...e.person, hasDob: true, age: ageOn(iso), ageAtEvent: ageOn(iso, start) } };
+      return { ...updated, selected: canSelect(edition, updated) };
+    }));
+    return null;
+  }, [profile, edition]);
+
   const chosen = useMemo(() => entries.filter((e) => e.selected), [entries]);
   const live = useMemo(() => active(entries), [entries]);
+  const steps = useMemo(() => stepsFor(chosen), [chosen]);
+  const at = Math.max(0, steps.indexOf(step));
 
   const HEALTH_MESSAGE = "Some health questions still need an answer. They are marked in red above.";
   /** Records a health answer and clears that person's warning as soon as they change it; the form-level warning goes once none are left. */
@@ -134,7 +180,7 @@ function Wizard() {
 
   /** Saves the step and each person's studio request, so a family can resume on another device. Failures are not fatal. */
   const saveDraft = useCallback(
-    async (toStep: number) => {
+    async (toStep: StepKey) => {
       await Promise.all(
         active(entries).map((e) =>
           api.put(`/registration/${e.registration!.id}/draft`, { draft: { step: toStep, studio: { [e.person.personId]: e.studio } } }).catch(() => undefined),
@@ -144,7 +190,7 @@ function Wizard() {
     [entries],
   );
 
-  function goTo(s: StepIndex) {
+  function goTo(s: StepKey) {
     setError(null);
     setStep(s);
     // Show the top of the wizard (title and progress), not wherever the previous step was scrolled to. The heading is focused for screen readers
@@ -157,7 +203,7 @@ function Wizard() {
 
   // Reviews are loaded fresh each time the review step opens.
   useEffect(() => {
-    if (step !== 4 || live.length === 0) return;
+    if (step !== "review" || live.length === 0) return;
     let alive = true;
     setReviewing(true);
     Promise.all(live.map((e) => api.get<Review>(`/registration/${e.registration!.id}/review`).then((r) => [e.registration!.id, r] as const)))
@@ -223,10 +269,11 @@ function Wizard() {
     setError(null);
     setBusy(true);
     try {
-      if (step === 0 && !(await startRegistrations())) return;
-      if (step === 1 && !(await saveHealth())) return;
-      await saveDraft(step + 1);
-      goTo((step + 1) as StepIndex);
+      if (step === "participants" && !(await startRegistrations())) return;
+      if (step === "health" && !(await saveHealth())) return;
+      const to = steps[at + 1] ?? "review";
+      await saveDraft(to);
+      goTo(to);
     } finally {
       setBusy(false);
     }
@@ -234,7 +281,7 @@ function Wizard() {
 
   async function saveAndExit() {
     setBusy(true);
-    if (step === 1) await saveHealth();
+    if (step === "health") await saveHealth();
     await saveDraft(step);
     router.push("/dashboard");
   }
@@ -313,8 +360,8 @@ function Wizard() {
         </div>
 
         <ol className="stepper" aria-label="Progress">
-          {STEPS.map((label, i) => (
-            <li key={label} className={i < step ? "done" : i === step ? "cur" : undefined} aria-current={i === step ? "step" : undefined}>{label}</li>
+          {steps.map((key, i) => (
+            <li key={key} className={i < at ? "done" : i === at ? "cur" : undefined} aria-current={i === at ? "step" : undefined}>{STEP_LABEL[key]}</li>
           ))}
         </ol>
 
@@ -330,12 +377,12 @@ function Wizard() {
           </div>
         )}
 
-        <h2 className="sr" tabIndex={-1} ref={headingRef}>Step {step + 1} of {STEPS.length}: {STEPS[step]}</h2>
+        <h2 className="sr" tabIndex={-1} ref={headingRef}>Step {at + 1} of {steps.length}: {STEP_LABEL[step]}</h2>
 
-        {step === 0 && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} />}
-        {step === 1 && <HealthStep entries={live} answers={health} setAnswer={answerHealth} errors={healthErrors} />}
-        {step === 2 && <ContactsStep />}
-        {step === 3 && (
+        {step === "participants" && <ParticipantsStep edition={edition} entries={entries} onChange={patchEntry} onRestart={restart} onDependantAdded={addedDependant} onSelfDob={saveSelfDob} />}
+        {step === "health" && <HealthStep entries={live} answers={health} setAnswer={answerHealth} errors={healthErrors} />}
+        {step === "pickup" && <ContactsStep />}
+        {step === "permissions" && (
           <PermissionsStep
             edition={edition}
             entries={live}
@@ -345,20 +392,32 @@ function Wizard() {
             setError={(id, m) => setConsentErrors((c) => (m ? { ...c, [id]: m } : Object.fromEntries(Object.entries(c).filter(([k]) => k !== id))))}
           />
         )}
-        {step === 4 && <ReviewStep edition={edition} entries={live} reviews={reviews} results={results} loading={reviewing && Object.keys(reviews).length === 0} onGoTo={goTo} />}
+        {step === "review" && <ReviewStep edition={edition} entries={live} reviews={reviews} results={results} loading={reviewing && Object.keys(reviews).length === 0} onGoTo={goTo} />}
 
         <FormError message={error} />
 
-        {step === 3 && !consentsReady && (
+        {step === "participants" && chosen.length === 0 && (
+          <p className="xs muted" id="choose-hint" role="status">Tick at least one person to continue.</p>
+        )}
+
+        {step === "permissions" && !consentsReady && (
           <p className="xs muted" id="consent-hint" role="status">Give the parent consent, confirm the pick-up notice and answer the photos and videos question for each child to continue.</p>
         )}
 
         <div className="wiz-actions">
-          {step > 0 ? <button type="button" className="btn btn-secondary" onClick={() => goTo((step - 1) as StepIndex)} disabled={busy}>Back</button> : <span />}
+          {at > 0 ? <button type="button" className="btn btn-secondary" onClick={() => goTo(steps[at - 1])} disabled={busy}>Back</button> : <span />}
           <div className="row">
             {live.length > 0 && <button type="button" className="btn btn-ghost" onClick={saveAndExit} disabled={busy}>Save draft and exit</button>}
-            {step < 4 ? (
-              <button type="button" className="btn btn-primary" onClick={next} disabled={busy || (step === 3 && !consentsReady)} aria-describedby={step === 3 && !consentsReady ? "consent-hint" : undefined}>{busy ? "Saving…" : "Continue"}</button>
+            {step !== "review" ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={next}
+                disabled={busy || (step === "participants" && chosen.length === 0) || (step === "permissions" && !consentsReady)}
+                aria-describedby={step === "participants" && chosen.length === 0 ? "choose-hint" : step === "permissions" && !consentsReady ? "consent-hint" : undefined}
+              >
+                {busy ? "Saving…" : step === "participants" && chosen.length > 0 ? continueLabel(chosen.map((e) => e.person.isSelf ? "you" : e.person.given)) : "Continue"}
+              </button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={submit} disabled={busy || reviewing || !live.some((e) => reviews[e.registration!.id]?.canSubmit && !results[e.registration!.id]?.ok)}>
                 {busy ? "Submitting…" : "Submit registration"}
@@ -369,4 +428,9 @@ function Wizard() {
       </div>
     </div>
   );
+}
+
+/** "Continue with Tobi and Dara"; past three people, just the count, so the button stays short. */
+function continueLabel(names: string[]): string {
+  return names.length > 3 ? `Continue with ${names.length} people` : `Continue with ${joinNames(names)}`;
 }

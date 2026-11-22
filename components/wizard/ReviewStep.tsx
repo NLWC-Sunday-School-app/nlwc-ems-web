@@ -6,7 +6,7 @@ import { PriceLine } from "@/components/PriceLine";
 import { MODE_LABEL, TASK_LABEL, initials } from "@/lib/format";
 import { pickupText } from "@/lib/editions";
 import type { PublicEdition, Registration, Review } from "@/lib/types";
-import { stepForTask, type Entry, type StepIndex } from "./model";
+import { stepForTask, type Entry, type StepKey } from "./model";
 
 export interface SubmitResult { ok: boolean; message?: string; state?: string }
 
@@ -23,7 +23,7 @@ export function ReviewStep({
   reviews: Record<string, Review>;
   results: Record<string, SubmitResult>;
   loading: boolean;
-  onGoTo: (step: StepIndex) => void;
+  onGoTo: (step: StepKey) => void;
 }) {
   const pickup = pickupText(edition);
   const anyDay = entries.some((e) => e.registration?.participationMode === "Day" && e.person.isChild);
@@ -90,7 +90,7 @@ export function ReviewStep({
           <div>
             <b>You can submit now.</b>
             {holding.map((e) => e.person.given).join(" and ")}'s pass stays "Pending" until the photo and video permission is answered.{" "}
-            <button type="button" className="link-btn" onClick={() => onGoTo(3)}>Answer it now</button>
+            <button type="button" className="link-btn" onClick={() => onGoTo("permissions")}>Answer it now</button>
           </div>
         </div>
       )}

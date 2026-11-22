@@ -11,6 +11,18 @@ import type { PublicEdition } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+type Audience = "children" | "adults" | "everyone";
+
+/** Who the event is for, from its ages: under-18s only, adults only, or both (e.g. a children's event that also admits young adults). */
+const audienceOf = (e: PublicEdition): Audience =>
+  e.maxAge != null && e.maxAge < 18 ? "children" : e.minAge != null && e.minAge >= 18 ? "adults" : "everyone";
+
+const AUDIENCE_NOTE: Record<Audience, string> = {
+  children: "Register one or more children in a single go. Each child gets their own pass.",
+  adults: "Register yourself in a few steps. You get your own pass.",
+  everyone: "Register yourself, your children, or both in a single go. Each person gets their own pass.",
+};
+
 const DAY_WORDS: Record<number, string> = { 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six", 7: "Seven" };
 
 async function load(slug: string): Promise<PublicEdition> {
@@ -42,6 +54,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const badge = statusBadge(e);
   const price = priceLine(e.price.state);
   const camp = campAges(e);
+  const audience = audienceOf(e);
   const pickup = pickupText(e);
   const content = contentFor(e);
   const year = e.startsOn.slice(0, 4);
@@ -112,10 +125,19 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               <div>
                 <h2>Details needed before you register</h2>
                 <ul className="ev-list">
-                  <li>Each child's date of birth</li>
-                  <li>Names and phone numbers of adults who may pick them up</li>
-                  <li>Any health or allergy information</li>
-                  <li>Parental consent information</li>
+                  {audience === "adults" ? (
+                    <>
+                      <li>Your date of birth</li>
+                      <li>Any health or allergy information, if attending in person</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>{audience === "children" ? "Each child's date of birth" : "The date of birth of each person attending"}</li>
+                      <li>Names and phone numbers of adults who may pick children up</li>
+                      <li>Any health or allergy information</li>
+                      <li>Parental consent information</li>
+                    </>
+                  )}
                 </ul>
               </div>
               {content?.studio && (
@@ -149,7 +171,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             ) : (
               <button className="btn btn-secondary btn-block" disabled aria-disabled="true">Registration isn't open yet</button>
             )}
-            <p className="xs muted">Register one or more children in a single go. Each child gets their own pass.</p>
+            <p className="xs muted">{AUDIENCE_NOTE[audience]}</p>
           </aside>
         </div>
       </div>

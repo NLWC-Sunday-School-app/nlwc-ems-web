@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AddDependantForm } from "@/components/Dependants";
-import { Avatar } from "@/components/Form";
-import { MODE_LABEL, initials } from "@/lib/format";
+import { Avatar, DateParts, FormError } from "@/components/Form";
+import { MODE_LABEL, initials, toIsoDate } from "@/lib/format";
 import type { ParticipationMode, PublicEdition } from "@/lib/types";
 import { MIN_REGISTRATION_AGE, ageAllowed, campAges, campAllows, modesOf } from "@/lib/editions";
-import type { Entry } from "./model";
+import { ageRangeText, canSelect, childrenWelcome, selfEligibility, type Entry } from "./model";
 
 export function ParticipantsStep({
   edition,
@@ -15,6 +15,7 @@ export function ParticipantsStep({
   onChange,
   onRestart,
   onDependantAdded,
+  onSelfDob,
 }: {
   edition: PublicEdition;
   entries: Entry[];
@@ -23,8 +24,12 @@ export function ParticipantsStep({
   onRestart: (personId: string) => void;
   /** Called after a new dependant is saved so the list can pick them up. */
   onDependantAdded: () => Promise<void> | void;
+  /** Saves the account holder's own date of birth. Resolves to an error message, or null when saved. */
+  onSelfDob: (iso: string) => Promise<string | null>;
 }) {
   const [adding, setAdding] = useState(false);
+  const [editingChild, setEditingChild] = useState<string | null>(null);
+  const [selfDobAdded, setSelfDobAdded] = useState(false);
   const modes = modesOf(edition);
   const camp = campAges(edition);
   const studio = edition.capabilities.includes("StudioRequests");
@@ -43,14 +48,48 @@ export function ParticipantsStep({
     }
   }, [entries, edition, onChange]);
 
+  // Who to show. The account holder only when they can take part (a parent on a children's event never sees themself);
+  // children always on events that admit children, even if too young, so the family can see why.
+  const kidsWelcome = childrenWelcome(edition);
+  const self = entries.find((e) => e.person.isSelf);
+  const selfState = self ? selfEligibility(edition, self.person, !!self.registration) : "ineligible";
+  const shown = entries
+    .filter((e) => (e.person.isSelf ? selfState === "eligible" : kidsWelcome || !!e.registration))
+    .map((e, i) => ({ e, i, ok: canSelect(edition, e) }))
+    .sort((a, b) => Number(b.ok) - Number(a.ok) || a.i - b.i)   // the ones that can be ticked first, otherwise in the usual order
+    .map((x) => x.e);
+  const kids = shown.filter((e) => !e.person.isSelf);
+  const selfShown = shown.some((e) => e.person.isSelf);
+  const anyKidSelectable = kids.some((e) => canSelect(edition, e));
+
+  const heading = selfShown && kids.length === 0 ? "How will you take part?" : !selfShown && kids.length > 0 ? "Which of your children are coming?" : "Who is attending, and how?";
+  const intro = selfShown && kids.length === 0
+    ? "Choose how you will take part."
+    : "Tick each person attending, then choose how they will take part. It can be different for each one.";
+
   return (
     <div className="stack-4">
       <div>
-        <h3>Who is attending, and how?</h3>
-        <p className="sm muted" style={{ marginTop: 4 }}>Tick everyone attending, then choose how each person will take part. It can be different for each one.</p>
+        <h3>{heading}</h3>
+        <p className="sm muted" style={{ marginTop: 4 }}>{intro}</p>
+        <p className="xs muted" style={{ marginTop: 4 }}>{ageRangeText(edition)}</p>
       </div>
 
-      {entries.map((e) => {
+      {kidsWelcome && kids.length === 0 && !selfShown && !adding && (
+        <div className="card stack-2">
+          <b>Add your child to register them for {edition.name}</b>
+          <p className="sm muted">{ageRangeText(edition)}. You'll need their date of birth. It only takes a minute.</p>
+          <div><button type="button" className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>Add a child</button></div>
+        </div>
+      )}
+
+      {kidsWelcome && kids.length > 0 && !anyKidSelectable && !selfShown && !adding && (
+        <div className="alert info" role="note">
+          <div><b>None of your children can take part yet.</b> {edition.name} is {forAges(edition)}. Add a date of birth where one is missing, or add another child.</div>
+        </div>
+      )}
+
+      {shown.map((e) => {
         const p = e.person;
         const name = `${p.given} ${p.family}`;
         const reg = e.registration;
@@ -75,11 +114,23 @@ export function ParticipantsStep({
               <p className="sm muted" role="note">{edition.name} is for people {tooYoung ? `aged ${minAge} and over` : `up to ${edition.maxAge} years old`}{p.isSelf ? "" : `, so ${p.given} can't take part`}.</p>
             )}
 
-            {noDob && (
+            {noDob && !p.isSelf && editingChild !== p.personId && (
               <div className="alert warn" role="note">
-                <div><b>Add a date of birth first.</b> We check each person's age before they can be registered.{" "}
-                  {p.isSelf ? <><Link href="/profile">Open your profile</Link> to add yours.</> : <><Link href="/profile#pf-kids">Open your profile</Link> to add {p.given}'s.</>}</div>
+                <div><b>Add {p.given}'s date of birth to register them.</b> We check each child's age before they can be registered.{" "}
+                  {p.dependant
+                    ? <button type="button" className="link-btn" onClick={() => setEditingChild(p.personId)}>Add date of birth</button>
+                    : <Link href="/profile#pf-kids">Open your profile</Link>}</div>
               </div>
+            )}
+            {editingChild === p.personId && p.dependant && (
+              <AddDependantForm
+                child={p.dependant}
+                onDone={async () => {
+                  await onDependantAdded();
+                  setEditingChild(null);
+                }}
+                onCancel={() => setEditingChild(null)}
+              />
             )}
 
             {e.selected && (
@@ -125,9 +176,21 @@ export function ParticipantsStep({
           </div>
         );
       })}
-      {entries.length === 0 && !adding && <div className="empty"><p className="muted sm">No one to register yet. Add a child below, or complete your profile.</p></div>}
+      {selfState === "unknown" && (
+        <SelfDob
+          eventName={edition.name}
+          onSave={async (iso) => {
+            const err = await onSelfDob(iso);
+            if (!err) setSelfDobAdded(true);
+            return err;
+          }}
+        />
+      )}
+      {selfDobAdded && selfState === "ineligible" && (
+        <p className="sm muted" role="note">{edition.name} is {forAges(edition)}, so you can't register yourself. You can still register your children.</p>
+      )}
 
-      {adding ? (
+      {!kidsWelcome ? null : adding ? (
         <AddDependantForm
           onDone={async () => {
             await onDependantAdded();
@@ -136,8 +199,47 @@ export function ParticipantsStep({
           onCancel={() => setAdding(false)}
         />
       ) : (
-        <div><button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(true)}>+ Add a dependant</button></div>
+        (kids.length > 0 || selfShown) && <div><button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(true)}>+ Add a child</button></div>
       )}
     </div>
   );
 }
+
+/** For an account holder with no date of birth: a quiet way to add it here, if they are attending themself. */
+function SelfDob({ eventName, onSave }: { eventName: string; onSave: (iso: string) => Promise<string | null> }) {
+  const [open, setOpen] = useState(false);
+  const [dob, setDob] = useState({ d: "", m: "", y: "" });
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (!open)
+    return (
+      <p className="sm muted">
+        Attending {eventName} yourself? <button type="button" className="link-btn" onClick={() => setOpen(true)}>Add your date of birth</button>
+      </p>
+    );
+
+  async function save() {
+    const iso = toIsoDate(dob.d, dob.m, dob.y);
+    if (!iso) return setError("Choose your date of birth from the calendar.");
+    setBusy(true);
+    setError(null);
+    const err = await onSave(iso);
+    setBusy(false);
+    if (err) setError(err);
+  }
+
+  return (
+    <div className="card stack-4" style={{ background: "var(--surface-sunken)", boxShadow: "none" }}>
+      <DateParts label="Your date of birth" required hint="We use it to check you can take part. You can only set it once, so check it carefully." value={dob} onChange={setDob} />
+      <FormError message={error} />
+      <div className="row">
+        <button type="button" className="btn btn-primary btn-sm" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save"}</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)} disabled={busy}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+/** "for ages 3–20", without the camp part. */
+const forAges = (edition: PublicEdition) => ageRangeText(edition).split(" · ")[0].replace(/^For/, "for");
