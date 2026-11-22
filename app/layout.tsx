@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Marcellus&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
         {/* Applies a saved theme before first paint so the page doesn't flash. */}
-        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('nlwc-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}" }} />
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('nlwc-theme');document.documentElement.setAttribute('data-theme',t||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}" }} />
       </head>
       <body>
         <AuthProvider>

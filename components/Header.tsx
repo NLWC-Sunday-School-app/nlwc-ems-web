@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 function ThemeToggle() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
-    setDark(document.documentElement.getAttribute("data-theme") === "dark" || (!document.documentElement.hasAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches));
+    setDark(document.documentElement.getAttribute("data-theme") === "dark");
   }, []);
   const toggle = () => {
     const next = dark ? "light" : "dark";
