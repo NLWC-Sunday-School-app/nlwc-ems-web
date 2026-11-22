@@ -64,7 +64,7 @@ export function AddDependantForm({ child, onDone, onCancel }: { child?: Dependan
     e.preventDefault();
     const iso = toIsoDate(dob.d, dob.m, dob.y);
     const found: typeof errors = {};
-    if (!iso) found.dob = "Enter a real date, for example 14 / 03 / 2017.";
+    if (!iso) found.dob = "Enter a real date, choose the day, month and year.";
     if (!f.confirm) found.confirm = "Please confirm you may register this child.";
     setErrors(found);
     setError(null);
